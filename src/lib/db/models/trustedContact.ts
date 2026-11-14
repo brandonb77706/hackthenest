@@ -1,9 +1,10 @@
 import { Schema } from "mongoose";
 import { CONTACT_METHODS, DEFAULT_CONTACT_PERMISSIONS, type TrustedContact } from "@/lib/types";
 import { ownedPlugin } from "../owned";
-import { defineModel, schemaOptions, type Fields } from "../schema";
+import { defineModel, ownerField, schemaOptions, type Fields } from "../schema";
 
 const fields = {
+  user_id: ownerField,
   name: { type: String, required: true, trim: true },
   method: { type: String, enum: CONTACT_METHODS, required: true },
   contact: { type: String, required: true, trim: true },

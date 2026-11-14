@@ -87,7 +87,7 @@ Every piece of logic ships with unit tests, and Claude confirms they pass before
 
 | Person | Owns |
 | --- | --- |
-| Brandon | Data model, AI layer, routine builder, merging to `main` |
+| Brandon | Data model, AI layer, routine builder, moving `dev` into `main` |
 | Adrian | Frontend: step player, home screen, accessibility, large text; camera help (confirm) |
 | Nati | Notifications: check-ins and nudges; rewards (suggested, confirm) |
 | George | Help section: lost mode, speak for me, trusted contacts, 911 and 988 |
@@ -106,7 +106,25 @@ Only change files in the current person's area. Flag anything that touches someo
 
 ## Git
 
-- One branch per feature: `brandon/routine-builder`, `adrian/step-player`, `nati/notifications`, `george/help-section`.
-- Small commits with clear messages. Run the definition-of-done checks before committing.
-- Brandon merges to `main`.
+Three levels: your branch → `dev` → `main`.
+
+| Branch | Who changes it | What it is |
+| --- | --- | --- |
+| `<name>/<feature>` (e.g. `adrian/step-player`) | Its owner | Your work in progress |
+| `dev` | Everyone, by merging their branch in | Everyone's finished work, together |
+| `main` | Brandon only | The version that works for the demo |
+
+**Getting your work into `dev`:**
+1. Commit to your own branch and push it: `git push origin <name>/<feature>`.
+2. Merge the latest `dev` into your branch: `git fetch origin && git merge origin/dev`. Fix any conflicts on your branch, never on `dev`.
+3. Make sure it all works: `npm test`, `npm run lint`, `npx tsc --noEmit`, `npm run build`, and try your feature with `npm run dev`. Push your branch again.
+4. When everything is good, merge your branch into `dev` and push: `git checkout dev && git pull && git merge <name>/<feature> && git push origin dev`.
+
+**Rules:**
+- Never commit directly to `dev` or `main`. Work happens on your branch.
+- Never push to `main`. Brandon moves `dev` into `main` when `dev` is stable.
+- If `dev` breaks after your merge, fix it on your branch and merge again.
+- Small commits with clear messages.
 - Never add Claude as a commit author or co-author in any form. No `Co-Authored-By` lines.
+
+For Claude: when asked to "merge into dev," follow steps 2 to 4 above, and stop and report if any check fails instead of merging. Only merge `dev` into `main` when Brandon asks.

@@ -1,9 +1,10 @@
 import { Schema } from "mongoose";
 import { REMINDER_SOURCES, type Reminder } from "@/lib/types";
 import { ownedPlugin } from "../owned";
-import { defineModel, schemaOptions, type Fields } from "../schema";
+import { defineModel, ownerField, schemaOptions, type Fields } from "../schema";
 
 const fields = {
+  user_id: ownerField,
   title: { type: String, required: true, trim: true },
   due: { type: Date, required: true },
   source: { type: String, enum: REMINDER_SOURCES, required: true },

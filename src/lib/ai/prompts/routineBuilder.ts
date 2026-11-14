@@ -15,23 +15,31 @@ export interface RoutineDraft {
   steps: RoutineDraftStep[];
 }
 
-/** How many steps each support level allows. */
-export const STEP_LIMITS: Record<SupportLevel, { min: number; max: number }> = {
+/**
+ * How many steps the AI should aim for at each support level. This is guidance
+ * in the prompt, not a hard rule: a short task like "take my medicine" can be
+ * 2 steps even at high support, and the person edits the steps before saving.
+ */
+export const STEP_TARGETS: Record<SupportLevel, { min: number; max: number }> = {
   high: { min: 4, max: 10 },
   medium: { min: 3, max: 6 },
   low: { min: 2, max: 4 },
 };
+
+/** Hard limits on what the AI can return. Matches the routine editor's limits. */
+export const MIN_STEPS = 1;
+export const MAX_STEPS = 15;
 
 const TEMPLATE = `You help a person with a disability build a daily routine they can follow on their own.
 Goal: {goal}
 Support level: {support_level} (high = very small steps, low = fewer, bigger steps)
 
 Rules:
-- 4 to 10 steps for high, 3 to 6 for medium, 2 to 4 for low.
+- Aim for about 4 to 10 steps for high, 3 to 6 for medium, 2 to 4 for low. A short, simple task can have fewer steps. Never add filler steps.
 - Each step is one action, under 10 words, plain language, starts with a verb.
 - Give realistic minutes per step.
 - For each step, write an image_prompt: a simple, friendly flat illustration of the action, no text in the image.
-- No medical advice.
+- No medical advice. Never add a medicine name, dose, or time the person didn't say. "Take your pill" is fine; "Take 200mg of ibuprofen" is not.
 
 Return JSON only.`;
 
@@ -61,7 +69,7 @@ export const routineSchema = {
 } as const;
 
 /** Checks the AI's routine. Steps come back sorted and numbered 1, 2, 3... */
-export function parseRoutine(raw: unknown, supportLevel: SupportLevel): ParseResult<RoutineDraft> {
+export function parseRoutine(raw: unknown): ParseResult<RoutineDraft> {
   if (!isRecord(raw)) return fail("Response is not an object");
   if (!isNonEmptyString(raw.title)) return fail("Missing title");
   if (!Array.isArray(raw.steps)) return fail("Missing steps");
@@ -80,9 +88,8 @@ export function parseRoutine(raw: unknown, supportLevel: SupportLevel): ParseRes
     });
   }
 
-  const { min, max } = STEP_LIMITS[supportLevel];
-  if (steps.length < min || steps.length > max) {
-    return fail(`Expected ${min} to ${max} steps for ${supportLevel} support, got ${steps.length}`);
+  if (steps.length < MIN_STEPS || steps.length > MAX_STEPS) {
+    return fail(`Expected ${MIN_STEPS} to ${MAX_STEPS} steps, got ${steps.length}`);
   }
 
   steps.sort((a, b) => a.order - b.order);

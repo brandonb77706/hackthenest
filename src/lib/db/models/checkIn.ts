@@ -1,9 +1,10 @@
 import { Schema } from "mongoose";
 import { CHECK_IN_STATUSES, type CheckIn } from "@/lib/types";
 import { ownedPlugin } from "../owned";
-import { defineModel, ObjectId, schemaOptions, type Fields } from "../schema";
+import { defineModel, ObjectId, ownerField, schemaOptions, type Fields } from "../schema";
 
 const fields = {
+  user_id: ownerField,
   step_id: { type: ObjectId, ref: "Step", required: true },
   routine_id: { type: ObjectId, ref: "Routine", required: true },
   status: { type: String, enum: CHECK_IN_STATUSES, required: true },

@@ -21,11 +21,9 @@ describe("ai.forFeature", () => {
 
   // The sample answers must pass the same checks real answers do,
   // so the app works end to end on mock.
-  it("mock routine passes parseRoutine at every support level", async () => {
+  it("mock routine passes parseRoutine", async () => {
     const raw = await ai.forFeature("routineBuilder").generateJSON(input);
-    for (const level of ["high", "medium", "low"] as const) {
-      expect(parseRoutine(raw, level).ok).toBe(true);
-    }
+    expect(parseRoutine(raw).ok).toBe(true);
   });
 
   it("mock camera help passes parseCameraHelp", async () => {
