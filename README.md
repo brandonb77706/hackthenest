@@ -103,6 +103,7 @@ Open http://localhost:3000. On a phone on the same wifi, use your computer's loc
 | --- | --- |
 | `npm run dev` | Start the dev server |
 | `npm run build` | Production build |
+| `npm test` | Run all tests once (`npm run test:watch` to rerun on save) |
 | `npm run lint` | Lint |
 | `npx tsc --noEmit` | Type check |
 
