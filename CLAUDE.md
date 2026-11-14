@@ -20,7 +20,8 @@ Bridge is a hackathon app (track: "Best use of Base44 AI", community vote). It g
 ## Stack
 
 - **Frontend:** Next.js (App Router, TypeScript, Tailwind). This is a recent Next.js version, so check `node_modules/next/dist/docs/` before using an API you're unsure of (see AGENTS.md).
-- **Backend:** not locked in. The team decides per feature. Base44 (database, auth, functions) is one option, and so are Next.js route handlers or another service. When a task needs a backend choice that hasn't been made, ask instead of picking one.
+- **Database:** MongoDB Atlas through Mongoose, from server code only. Models are in `src/lib/db/models/`, and every query on an owned model must filter by `user_id` (a guard enforces it). No login yet: use `getCurrentUserId()`, never a hardcoded id.
+- **Other backend pieces** (file storage, scheduling, auth) aren't decided. When a task needs one of those choices, ask instead of picking one.
 - **AI:** Base44 AI plus other providers. Every AI call goes through `src/lib/ai/` (below), so providers can be swapped without touching features.
 - **Voice:** ElevenLabs, called from server-side code only.
 - **Later:** the app is built in VS Code first and connected to Base44 after the features work. Keep Base44 behind wrappers (`src/lib/ai/providers/base44.ts`, data helpers in `src/lib/`) so connecting it doesn't touch feature code.
@@ -33,6 +34,7 @@ src/
   components/           shared UI (accessible buttons, cards, layout)
   features/<feature>/   feature logic, components, and tests together
   lib/ai/               AI layer: providers, model config, prompts
+  lib/db/               MongoDB: connection, models, current user
   lib/                  other shared helpers
 docs/                   project docs
 ```
@@ -40,7 +42,7 @@ docs/                   project docs
 1. **Feature folders.** Each owner's work lives in `src/features/<feature>/` (`routine-builder`, `step-player`, `camera-help`, `help`, `notifications`, `rewards`). Keep its components, logic, and tests there.
 2. **Logic separate from UI.** Put rules (streak math, token awards, routine validation, independence score) in plain TypeScript functions, not inside components, so they're easy to unit test.
 3. **Server vs client.** Anything holding a secret (AI provider keys, ElevenLabs) runs server-side: route handlers in `src/app/api/` or backend functions. Never put a secret in a `NEXT_PUBLIC_` variable or a Client Component.
-4. **Types first.** Shared types (Routine, Step, CheckIn, etc.) live in `src/lib/types.ts` and match `docs/data-model.md`.
+4. **Types first.** Shared types (Routine, Step, CheckIn, etc.) live in `src/lib/types.ts` and match `docs/data-model.md` and the models in `src/lib/db/models/`.
 
 ## AI layer (`src/lib/ai/`)
 
@@ -71,7 +73,7 @@ Every piece of logic ships with unit tests, and Claude confirms they pass before
 - **Tools:** Vitest and React Testing Library. Run them with `npm test`.
 - **Location:** next to the code, `thing.ts` paired with `thing.test.ts`.
 - **What to test:** all logic functions (streaks, tokens, scheduling, score, validation), AI response parsing (valid, malformed, and missing fields), and key UI behavior (Done and I'm stuck buttons, emergency buttons appear).
-- **Mock AI and network calls** in tests. Tests never hit a real AI provider, Base44, or ElevenLabs.
+- **Mock AI and network calls** in tests. Tests never hit a real AI provider, Base44, ElevenLabs, or MongoDB. Model tests use `doc.validate()` and `toRecord()`, which don't need a connection.
 - **Safety tests are required:** stuck help input mentioning danger must show 911 and 988; sharing settings default to off; using help never reduces tokens.
 
 **Definition of done for any task:**

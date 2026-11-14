@@ -1,6 +1,6 @@
 # Architecture
 
-Bridge is a Next.js app built in VS Code. It gets connected to Base44 later, and some features may use Base44 AI. The backend (database, auth) is decided feature by feature.
+Bridge is a Next.js app built in VS Code. Data lives in MongoDB Atlas. The app gets connected to Base44 later, and some features may use Base44 AI.
 
 ![System design whiteboard](whiteboards/3-system-design.jpg)
 
@@ -21,8 +21,8 @@ flowchart TB
         MS["Messages and nudges"]
         TK["Token awards and purchases"]
     end
-    subgraph Backend["Backend (decided per feature)"]
-        DB["Database and auth<br/>Base44 or another option"]
+    subgraph Backend["Database"]
+        DB["MongoDB Atlas<br/>via Mongoose"]
     end
     subgraph Outside["Outside services"]
         B44["Base44 AI and other AI providers"]
@@ -59,10 +59,14 @@ Anything that holds a secret or must not be trusted to the browser runs here.
 | Voice | ElevenLabs text-to-speech. Audio is generated once and stored on the Step. |
 | Messages | Trusted contact messages and location share links, only when the user turned sharing on. |
 | Tokens | Awarding tokens when a CheckIn is saved as done, and avatar purchases. |
-| Check-in nudges | Finding due steps with no CheckIn and sending a nudge. How it's scheduled depends on the backend choice. |
+| Check-in nudges | Finding due steps with no CheckIn and sending a nudge. How it's scheduled is Nati's call (for example a cron route handler). |
 
-### Backend (database and auth)
-Not locked in. Options per feature: Base44 (entities, auth, file storage, backend functions) or another service. When a feature needs a backend choice that hasn't been made, the team decides before building it. Whatever is chosen, users can only read and write their own records.
+### Database (MongoDB Atlas)
+One shared Atlas cluster, used through Mongoose from server code only. Models live in `src/lib/db/models/`; see `data-model.md`.
+
+- Users only read and write their own records. Every owned model has `user_id`, and a guard rejects any query that doesn't filter by it.
+- **Login:** none yet. Everyone uses a fixed test user from `getCurrentUserId()` in `src/lib/db/currentUser.ts`. Real login replaces that one function later.
+- **File storage** (step images, audio, bill photos): not decided yet. Don't store files in MongoDB documents.
 
 ### Outside services
 | Service | Used for |
@@ -76,11 +80,7 @@ Not locked in. Options per feature: Base44 (entities, auth, file storage, backen
 
 Keep Base44 behind small wrappers so connecting it later doesn't touch feature code:
 - AI calls go through `src/lib/ai/providers/base44.ts`.
-- Data access goes through helpers in `src/lib/`, not direct calls from components.
-
-## Database note
-
-The whiteboard lists MongoDB. If the team uses Base44 for data, it already includes a database with auth and security rules, so MongoDB isn't needed. Adding MongoDB means hosting it, writing an API, and managing keys. Only add it if the team has a specific reason.
+- Data access goes through server code (`src/lib/db/`), never from Client Components.
 
 ## Demo mode
 

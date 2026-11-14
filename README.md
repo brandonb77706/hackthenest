@@ -54,8 +54,8 @@ flowchart TB
         MS["Messages and nudges"]
         TK["Token awards and purchases"]
     end
-    subgraph Backend["Backend (decided per feature)"]
-        DB["Database and auth<br/>Base44 or another option"]
+    subgraph Backend["Database"]
+        DB["MongoDB Atlas<br/>via Mongoose"]
     end
     subgraph Outside["Outside services"]
         B44["Base44 AI and other AI providers"]
@@ -96,6 +96,7 @@ npm run dev
 Open http://localhost:3000. On a phone on the same wifi, use your computer's local IP address instead of `localhost`.
 
 - Keys go in `.env.local`, which git ignores. Never commit keys, and never put a secret in a `NEXT_PUBLIC_` variable.
+- MongoDB: get the Atlas connection string from Brandon and set `MONGODB_URI`. Tests don't need it.
 - ElevenLabs: create an API key and pick 2 to 3 calm voices. Set `ELEVENLABS_API_KEY` and `ELEVENLABS_VOICE_ID`.
 - Work on your own branch and only change files in your area (see [docs/team.md](docs/team.md)). Brandon merges to `main`.
 
@@ -104,6 +105,7 @@ Open http://localhost:3000. On a phone on the same wifi, use your computer's loc
 | `npm run dev` | Start the dev server |
 | `npm run build` | Production build |
 | `npm test` | Run all tests once (`npm run test:watch` to rerun on save) |
+| `npm run db:seed` | Add the test user and avatar catalog to MongoDB (safe to rerun) |
 | `npm run lint` | Lint |
 | `npx tsc --noEmit` | Type check |
 

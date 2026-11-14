@@ -1,12 +1,22 @@
-// Shared types. These match docs/data-model.md. Ask Brandon before adding or renaming fields.
-// Dates and datetimes are ISO strings ("2026-11-14", "2026-11-14T09:00:00Z").
+// Shared types. These match docs/data-model.md and the Mongoose models in src/lib/db/models/.
+// Ask Brandon before adding or renaming fields.
+//
+// Ids are strings (MongoDB ObjectIds as hex). Datetimes are ISO strings ("2026-11-14T09:00:00.000Z").
 
 export type ID = string;
 
-export type SupportLevel = "high" | "medium" | "low";
-export type Weekday = "mon" | "tue" | "wed" | "thu" | "fri" | "sat" | "sun";
+/** Every record a user owns has this. Avatar (the shared catalog) is the only entity without it. */
+export interface Owned {
+  user_id: ID;
+}
 
-export interface UserProfile {
+export const SUPPORT_LEVELS = ["high", "medium", "low"] as const;
+export type SupportLevel = (typeof SUPPORT_LEVELS)[number];
+
+export const WEEKDAYS = ["mon", "tue", "wed", "thu", "fri", "sat", "sun"] as const;
+export type Weekday = (typeof WEEKDAYS)[number];
+
+export interface UserProfile extends Owned {
   id: ID;
   name: string;
   /** ElevenLabs voice the user picked */
@@ -22,13 +32,13 @@ export interface UserProfile {
   longest_streak: number;
   /** 0 to 2 */
   streak_freezes: number;
-  /** Used to update the streak */
+  /** "YYYY-MM-DD" in the user's day. Used to update the streak */
   last_streak_date: string | null;
   /** Avatar shown as the guide */
   equipped_avatar_id: ID | null;
 }
 
-export interface Routine {
+export interface Routine extends Owned {
   id: ID;
   title: string;
   /** What the user said */
@@ -39,7 +49,7 @@ export interface Routine {
   active: boolean;
 }
 
-export interface Step {
+export interface Step extends Owned {
   id: ID;
   routine_id: ID;
   order: number;
@@ -52,9 +62,10 @@ export interface Step {
   audio_url: string | null;
 }
 
-export type CheckInStatus = "done" | "skipped" | "stuck";
+export const CHECK_IN_STATUSES = ["done", "skipped", "stuck"] as const;
+export type CheckInStatus = (typeof CHECK_IN_STATUSES)[number];
 
-export interface CheckIn {
+export interface CheckIn extends Owned {
   id: ID;
   step_id: ID;
   routine_id: ID;
@@ -63,9 +74,10 @@ export interface CheckIn {
   time: string;
 }
 
-export type HelpRequestType = "camera" | "stuck" | "lost" | "speak";
+export const HELP_REQUEST_TYPES = ["camera", "stuck", "lost", "speak"] as const;
+export type HelpRequestType = (typeof HELP_REQUEST_TYPES)[number];
 
-export interface HelpRequest {
+export interface HelpRequest extends Owned {
   id: ID;
   type: HelpRequestType;
   input_text: string;
@@ -76,7 +88,8 @@ export interface HelpRequest {
   escalated: boolean;
 }
 
-export type ContactMethod = "sms" | "email" | "telegram";
+export const CONTACT_METHODS = ["sms", "email", "telegram"] as const;
+export type ContactMethod = (typeof CONTACT_METHODS)[number];
 
 export interface TrustedContactPermissions {
   can_see_routines: boolean;
@@ -91,16 +104,17 @@ export const DEFAULT_CONTACT_PERMISSIONS: Readonly<TrustedContactPermissions> = 
   can_get_stuck_alerts: false,
 });
 
-export interface TrustedContact extends TrustedContactPermissions {
+export interface TrustedContact extends Owned, TrustedContactPermissions {
   id: ID;
   name: string;
   method: ContactMethod;
   contact: string;
 }
 
-export type ReminderSource = "routine" | "camera";
+export const REMINDER_SOURCES = ["routine", "camera"] as const;
+export type ReminderSource = (typeof REMINDER_SOURCES)[number];
 
-export interface Reminder {
+export interface Reminder extends Owned {
   id: ID;
   title: string;
   due: string;
@@ -108,7 +122,7 @@ export interface Reminder {
   sent: boolean;
 }
 
-export interface SpeakPhrase {
+export interface SpeakPhrase extends Owned {
   id: ID;
   /** e.g. "I have a stutter, please give me a moment" */
   text: string;
@@ -117,9 +131,10 @@ export interface SpeakPhrase {
   order: number;
 }
 
-export type AvatarUnlockType = "starter" | "shop" | "streak";
+export const AVATAR_UNLOCK_TYPES = ["starter", "shop", "streak"] as const;
+export type AvatarUnlockType = (typeof AVATAR_UNLOCK_TYPES)[number];
 
-/** Shared catalog, read-only for users. */
+/** Shared catalog, read-only for users. Not owned by any user. */
 export interface Avatar {
   id: ID;
   name: string;
@@ -132,21 +147,23 @@ export interface Avatar {
   streak_required: number | null;
 }
 
-export type UserAvatarSource = "starter" | "bought" | "streak";
+export const USER_AVATAR_SOURCES = ["starter", "bought", "streak"] as const;
+export type UserAvatarSource = (typeof USER_AVATAR_SOURCES)[number];
 
-export interface UserAvatar {
+export interface UserAvatar extends Owned {
   id: ID;
   avatar_id: ID;
   source: UserAvatarSource;
   unlocked_at: string;
 }
 
-export type TokenReason = "step" | "routine" | "camera" | "first_routine" | "streak" | "purchase";
+export const TOKEN_REASONS = ["step", "routine", "camera", "first_routine", "streak", "purchase"] as const;
+export type TokenReason = (typeof TOKEN_REASONS)[number];
 
 /** Only server code writes these. Balance = sum of the user's transactions. */
-export interface TokenTransaction {
+export interface TokenTransaction extends Owned {
   id: ID;
-  /** Positive = earned, negative = spent */
+  /** Positive = earned, negative = spent (purchase only) */
   amount: number;
   reason: TokenReason;
   /** CheckIn or Avatar id */
