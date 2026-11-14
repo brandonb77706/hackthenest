@@ -1,0 +1,110 @@
+# CLAUDE.md
+
+Context for Claude when working in this repo. Read this first, then the doc in `docs/` that matches the task.
+
+@AGENTS.md
+
+## Project
+
+Bridge is a hackathon app (track: "Best use of Base44 AI", community vote). It gives AI support to people with disabilities who don't have a parent, aide, or caregiver around: routines, paperwork, help when lost or stuck, and rewards for doing tasks. Support fades as independence grows.
+
+| Doc | What's in it |
+| --- | --- |
+| `README.md` | Product overview and features |
+| `docs/architecture.md` | How the parts connect |
+| `docs/data-model.md` | Entities and fields |
+| `docs/ai-prompts.md` | Prompts and JSON shapes for every AI call |
+| `docs/rewards.md` | Tokens, streaks, avatars |
+| `docs/team.md` | Ownership and timeline |
+
+## Stack
+
+- **Frontend:** Next.js (App Router, TypeScript, Tailwind). This is a recent Next.js version, so check `node_modules/next/dist/docs/` before using an API you're unsure of (see AGENTS.md).
+- **Backend:** not locked in. The team decides per feature. Base44 (database, auth, functions) is one option, and so are Next.js route handlers or another service. When a task needs a backend choice that hasn't been made, ask instead of picking one.
+- **AI:** Base44 AI plus other providers. Every AI call goes through `src/lib/ai/` (below), so providers can be swapped without touching features.
+- **Voice:** ElevenLabs, called from server-side code only.
+- **Later:** the app is built in VS Code first and connected to Base44 after the features work. Keep Base44 behind wrappers (`src/lib/ai/providers/base44.ts`, data helpers in `src/lib/`) so connecting it doesn't touch feature code.
+
+## Repo patterns
+
+```
+src/
+  app/                  routes (one folder per screen)
+  components/           shared UI (accessible buttons, cards, layout)
+  features/<feature>/   feature logic, components, and tests together
+  lib/ai/               AI layer: providers, model config, prompts
+  lib/                  other shared helpers
+docs/                   project docs
+```
+
+1. **Feature folders.** Each owner's work lives in `src/features/<feature>/` (`routine-builder`, `step-player`, `camera-help`, `help`, `notifications`, `rewards`). Keep its components, logic, and tests there.
+2. **Logic separate from UI.** Put rules (streak math, token awards, routine validation, independence score) in plain TypeScript functions, not inside components, so they're easy to unit test.
+3. **Server vs client.** Anything holding a secret (AI provider keys, ElevenLabs) runs server-side: route handlers in `src/app/api/` or backend functions. Never put a secret in a `NEXT_PUBLIC_` variable or a Client Component.
+4. **Types first.** Shared types (Routine, Step, CheckIn, etc.) live in `src/lib/types.ts` and match `docs/data-model.md`.
+
+## AI layer (`src/lib/ai/`)
+
+- `providers/`: one file per provider (for example `base44.ts`, `openai.ts`), each implementing the same interface:
+  ```ts
+  export interface AIProvider {
+    generateText(input: { prompt: string; files?: string[] }): Promise<string>;
+    generateJSON<T>(input: { prompt: string; schema: object; files?: string[] }): Promise<T>;
+  }
+  ```
+- `models.ts`: the only place that says which provider and model each feature uses:
+  ```ts
+  export const AI_CONFIG = {
+    routineBuilder: { provider: 'base44', model: '...' },
+    cameraHelp:     { provider: 'base44', model: '...' },
+    stuckHelp:      { provider: '...',    model: '...' },
+  } as const;
+  ```
+- `prompts/`: prompt builders, one per feature, copied from `docs/ai-prompts.md`.
+- Features call `ai.forFeature('routineBuilder').generateJSON(...)` and never call a provider directly.
+- Use structured JSON output whenever code reads the result, and check the shape before saving.
+- Base44 AI: `base44.integrations.Core.InvokeLLM({ prompt, response_json_schema, file_urls, model })`. Valid `model` values are in `node_modules/@base44/sdk/dist/modules/integrations.types.d.ts` once `@base44/sdk` is installed. Read that list instead of guessing.
+
+## Testing
+
+Every piece of logic ships with unit tests, and Claude confirms they pass before calling a task done.
+
+- **Tools:** Vitest and React Testing Library. Run them with `npm test`.
+- **Location:** next to the code, `thing.ts` paired with `thing.test.ts`.
+- **What to test:** all logic functions (streaks, tokens, scheduling, score, validation), AI response parsing (valid, malformed, and missing fields), and key UI behavior (Done and I'm stuck buttons, emergency buttons appear).
+- **Mock AI and network calls** in tests. Tests never hit a real AI provider, Base44, or ElevenLabs.
+- **Safety tests are required:** stuck help input mentioning danger must show 911 and 988; sharing settings default to off; using help never reduces tokens.
+
+**Definition of done for any task:**
+1. Tests written or updated for the change.
+2. `npm test` passes. Show the summary line.
+3. `npm run lint` and `npx tsc --noEmit` pass.
+4. `npm run build` passes if the change touches routes or config.
+5. If something fails, fix it or say clearly what's still failing. Never report a task as done with failing tests.
+
+## Team ownership
+
+| Person | Owns |
+| --- | --- |
+| Brandon | Data model, AI layer, routine builder, merging to `main` |
+| Adrian | Frontend: step player, home screen, accessibility, large text; camera help (confirm) |
+| Nati | Notifications: check-ins and nudges; rewards (suggested, confirm) |
+| George | Help section: lost mode, speak for me, trusted contacts, 911 and 988 |
+
+Only change files in the current person's area. Flag anything that touches someone else's area, and ask Brandon before changing shared types or the AI layer.
+
+## Product rules
+
+1. **Accessibility first.** 18px minimum body text, high contrast, one main action per screen, 48px minimum tap targets, real `<button>` and `<label>` elements, works with a screen reader.
+2. **User is in control.** Nothing goes to a trusted contact unless the user turned it on. Every sharing setting defaults to off.
+3. **Safety.** The AI never gives medical or legal advice. Any mention of danger, self-harm, or emergency shows 911 and 988 right away. The AI never pretends to be a human.
+4. **Plain language.** All AI text for users uses short sentences, one action at a time, and no jargon.
+5. **Rewards never punish.** Tokens are never removed, help earns the same tokens, streaks have freezes, and there are no real-money purchases. Token changes happen server-side only.
+6. **Demo assets.** Pre-generate demo images and audio. If ElevenLabs fails, fall back to the browser's `speechSynthesis`.
+7. **Secrets** live in `.env.local` (gitignored) or the backend's secret store. Never commit keys.
+
+## Git
+
+- One branch per feature: `brandon/routine-builder`, `adrian/step-player`, `nati/notifications`, `george/help-section`.
+- Small commits with clear messages. Run the definition-of-done checks before committing.
+- Brandon merges to `main`.
+- Never add Claude as a commit author or co-author in any form. No `Co-Authored-By` lines.
