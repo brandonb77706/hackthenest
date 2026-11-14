@@ -16,15 +16,20 @@ class FakeAudio {
 }
 let audios: FakeAudio[] = [];
 const speechSpeak = vi.fn();
+let browserVoices: Partial<SpeechSynthesisVoice>[] = [];
 
 beforeEach(() => {
   audios = [];
+  browserVoices = [];
+  vi.stubEnv("NEXT_PUBLIC_VOICE_PROVIDER", "elevenlabs");
   vi.stubGlobal("Audio", FakeAudio);
-  vi.stubGlobal("speechSynthesis", { speak: speechSpeak, cancel: vi.fn() });
+  vi.stubGlobal("speechSynthesis", { speak: speechSpeak, cancel: vi.fn(), getVoices: () => browserVoices });
   vi.stubGlobal(
     "SpeechSynthesisUtterance",
     class {
       rate = 1;
+      voice: unknown = null;
+      lang = "";
       onend: (() => void) | null = null;
       onerror: (() => void) | null = null;
       constructor(public text: string) {}
@@ -36,6 +41,7 @@ beforeEach(() => {
 afterEach(() => {
   resetPlayer();
   vi.unstubAllGlobals();
+  vi.unstubAllEnvs();
   vi.clearAllMocks();
 });
 
@@ -100,6 +106,24 @@ describe("ReadAloudButton", () => {
     await waitFor(() => expect(audios).toHaveLength(1));
     expect(audios[0].pause).toHaveBeenCalled();
     expect(screen.getByRole("button", { name: "Read aloud" })).toBeInTheDocument();
+  });
+
+  it("uses only the free browser voice when set to browser, and never calls ElevenLabs", async () => {
+    vi.stubEnv("NEXT_PUBLIC_VOICE_PROVIDER", "browser");
+    const fetchMock = vi.fn();
+    vi.stubGlobal("fetch", fetchMock);
+    browserVoices = [
+      { name: "Alex", lang: "en-US", localService: true },
+      { name: "Google US English", lang: "en-US", localService: false },
+    ];
+    const user = userEvent.setup();
+    render(<ReadAloudButton text="Take your pill" />);
+
+    await user.click(screen.getByRole("button", { name: "Read aloud" }));
+
+    expect(fetchMock).not.toHaveBeenCalled();
+    expect(speechSpeak).toHaveBeenCalledOnce();
+    expect(speechSpeak.mock.calls[0][0].voice).toMatchObject({ name: "Google US English" });
   });
 
   it("is disabled when there's nothing to read", () => {

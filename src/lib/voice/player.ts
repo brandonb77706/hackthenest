@@ -1,5 +1,11 @@
 // Plays text aloud in the browser. Only one thing plays at a time.
 // Tries ElevenLabs (through /api/speak) first, then the browser's own voice.
+//
+// Which voice to use is set by NEXT_PUBLIC_VOICE_PROVIDER:
+//   "browser"     the browser's free voice only. Never calls ElevenLabs.
+//   "elevenlabs"  ElevenLabs, with the browser voice as backup.
+//   not set       browser voice in `npm run dev` (testing doesn't use credits),
+//                 ElevenLabs everywhere else.
 
 export type PlayerStatus = "idle" | "loading" | "playing";
 
@@ -9,7 +15,29 @@ export interface PlayerState {
   text: string | null;
 }
 
+export type VoiceProvider = "browser" | "elevenlabs";
+
 const FALLBACK_RATE = 0.9;
+
+export function voiceProvider(): VoiceProvider {
+  const setting = process.env.NEXT_PUBLIC_VOICE_PROVIDER;
+  if (setting === "browser" || setting === "elevenlabs") return setting;
+  return process.env.NODE_ENV === "development" ? "browser" : "elevenlabs";
+}
+
+/**
+ * A clear English voice if the browser has one ("Google US English" in Chrome),
+ * otherwise any English voice, otherwise the browser's default.
+ */
+export function pickBrowserVoice(voices: SpeechSynthesisVoice[]): SpeechSynthesisVoice | undefined {
+  const english = voices.filter((v) => v.lang?.toLowerCase().startsWith("en"));
+  return (
+    english.find((v) => v.name === "Google US English") ??
+    english.find((v) => v.lang === "en-US" && v.localService) ??
+    english.find((v) => v.lang === "en-US") ??
+    english[0]
+  );
+}
 
 let state: PlayerState = { status: "idle", text: null };
 const listeners = new Set<() => void>();
@@ -66,6 +94,11 @@ function speakWithBrowser(text: string, id: number): void {
   }
   const utterance = new SpeechSynthesisUtterance(text);
   utterance.rate = FALLBACK_RATE;
+  const voice = pickBrowserVoice(window.speechSynthesis.getVoices?.() ?? []);
+  if (voice) {
+    utterance.voice = voice;
+    utterance.lang = voice.lang;
+  }
   const done = () => {
     if (id === playId) setState({ status: "idle", text: null });
   };
@@ -79,8 +112,13 @@ function speakWithBrowser(text: string, id: number): void {
 export async function play(text: string): Promise<void> {
   stop();
   const id = playId;
-  setState({ status: "loading", text });
 
+  if (voiceProvider() === "browser") {
+    speakWithBrowser(text, id);
+    return;
+  }
+
+  setState({ status: "loading", text });
   const url = await fetchAudioUrl(text);
   if (id !== playId) return;
 

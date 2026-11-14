@@ -12,7 +12,7 @@ Owner: Brandon. Components, logic, and tests for this feature live here. See CLA
 | `/routines/new/<template>` | Editor filled from a template (`take-medicine`, `morning`, `get-ready-for-work`, `bedtime`) |
 | `/routines/<id>/edit` | Editor for a saved routine, with Delete |
 
-Each step has a 🔊 Read aloud button (`src/components/ReadAloudButton.tsx`, shared with the step player). It uses ElevenLabs through `POST /api/speak` with the user's saved voice and speed, and the browser's own voice if ElevenLabs fails.
+Each step has a 🔊 Read aloud button (`src/components/ReadAloudButton.tsx`, shared with the step player). It uses ElevenLabs through `POST /api/speak` with the user's saved voice and speed, and the browser's own voice if ElevenLabs fails. In `npm run dev` it uses the free browser voice unless `NEXT_PUBLIC_VOICE_PROVIDER=elevenlabs` is set.
 
 The editor has two screens: steps (name, steps, add/edit/move/remove), then "When do you do this?" (days and time). Nothing is saved until the person taps Save.
 

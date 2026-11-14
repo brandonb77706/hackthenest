@@ -97,7 +97,7 @@ Open http://localhost:3000. On a phone on the same wifi, use your computer's loc
 
 - Keys go in `.env.local`, which git ignores. Never commit keys, and never put a secret in a `NEXT_PUBLIC_` variable.
 - MongoDB: get the Atlas connection string from Brandon and set `MONGODB_URI`. Tests don't need it.
-- ElevenLabs: get the API key from Brandon and set `ELEVENLABS_API_KEY`. Without it, Read aloud uses the browser's own voice. The voices people can pick are in `src/lib/voice/voices.ts`.
+- ElevenLabs: get the API key from Brandon and set `ELEVENLABS_API_KEY`. Without it, Read aloud uses the browser's own voice. `npm run dev` uses the free browser voice by default so testing doesn't use credits; set `NEXT_PUBLIC_VOICE_PROVIDER=elevenlabs` in `.env.local` (and restart) to hear ElevenLabs. The voices people can pick are in `src/lib/voice/voices.ts`.
 - Work on your own branch and only change files in your area (see [docs/team.md](docs/team.md)). Merge `dev` into your branch, check everything works, then merge your branch into `dev`. Only Brandon moves `dev` into `main`. Full steps: the Git section of `CLAUDE.md`.
 
 | Command | Does |
