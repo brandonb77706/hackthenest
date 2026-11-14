@@ -41,7 +41,7 @@ export interface UserProfile extends Owned {
 export interface Routine extends Owned {
   id: ID;
   title: string;
-  /** What the user said */
+  /** What the user told Bridge. Empty for routines made by hand */
   goal: string;
   days: Weekday[];
   /** "08:00" */

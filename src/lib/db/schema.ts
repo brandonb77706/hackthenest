@@ -5,11 +5,14 @@ import mongoose, { Schema, Types, type SchemaDefinitionProperty, type SchemaOpti
 /**
  * Schema fields for a type from src/lib/types.ts. Use with `satisfies` so a
  * field missing from the schema, or an extra one, is a type error.
- * `id` comes from Mongo's _id, and `user_id` from ownedPlugin.
+ * `id` comes from Mongo's _id.
  */
-export type Fields<T> = Record<Exclude<keyof T, "id" | "user_id">, SchemaDefinitionProperty>;
+export type Fields<T> = Record<Exclude<keyof T, "id">, SchemaDefinitionProperty>;
 
 export const ObjectId = Schema.Types.ObjectId;
+
+/** The owner field for every model a user owns. Pair it with ownedPlugin. */
+export const ownerField = { type: ObjectId, required: true, index: true } as const;
 
 /** "YYYY-MM-DD" */
 export const DATE_ONLY = /^\d{4}-\d{2}-\d{2}$/;

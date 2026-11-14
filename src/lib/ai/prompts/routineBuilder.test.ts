@@ -20,11 +20,16 @@ describe("buildRoutinePrompt", () => {
     expect(prompt).toContain("Support level: high");
     expect(prompt).not.toMatch(/\{\w+\}/);
   });
+
+  it("tells the AI not to invent medicine names or doses", () => {
+    const prompt = buildRoutinePrompt({ goal: "take my medicine", supportLevel: "high" });
+    expect(prompt).toMatch(/Never add a medicine name, dose, or time/);
+  });
 });
 
 describe("parseRoutine", () => {
   it("accepts a valid routine", () => {
-    const result = parseRoutine(routine(4), "medium");
+    const result = parseRoutine(routine(4));
     expect(result.ok).toBe(true);
     if (result.ok) {
       expect(result.value.title).toBe("Morning");
@@ -34,7 +39,7 @@ describe("parseRoutine", () => {
 
   it("sorts steps and renumbers them from 1", () => {
     const raw = { title: "T", steps: [step(7, "C"), step(2, "A"), step(5, "B")] };
-    const result = parseRoutine(raw, "medium");
+    const result = parseRoutine(raw);
     expect(result.ok && result.value.steps.map((s) => [s.order, s.text])).toEqual([
       [1, "A"],
       [2, "B"],
@@ -42,30 +47,29 @@ describe("parseRoutine", () => {
     ]);
   });
 
-  it("enforces the step count for each support level", () => {
-    expect(parseRoutine(routine(3), "high").ok).toBe(false);
-    expect(parseRoutine(routine(4), "high").ok).toBe(true);
-    expect(parseRoutine(routine(10), "high").ok).toBe(true);
-    expect(parseRoutine(routine(11), "high").ok).toBe(false);
-    expect(parseRoutine(routine(2), "low").ok).toBe(true);
-    expect(parseRoutine(routine(5), "low").ok).toBe(false);
+  it("accepts 1 to 15 steps, so a short task like taking medicine isn't rejected", () => {
+    expect(parseRoutine(routine(0)).ok).toBe(false);
+    expect(parseRoutine(routine(1)).ok).toBe(true);
+    expect(parseRoutine(routine(2)).ok).toBe(true);
+    expect(parseRoutine(routine(15)).ok).toBe(true);
+    expect(parseRoutine(routine(16)).ok).toBe(false);
   });
 
   it("rejects malformed responses", () => {
-    expect(parseRoutine(null, "medium").ok).toBe(false);
-    expect(parseRoutine("not json", "medium").ok).toBe(false);
-    expect(parseRoutine([], "medium").ok).toBe(false);
-    expect(parseRoutine({ title: "T", steps: "nope" }, "medium").ok).toBe(false);
+    expect(parseRoutine(null).ok).toBe(false);
+    expect(parseRoutine("not json").ok).toBe(false);
+    expect(parseRoutine([]).ok).toBe(false);
+    expect(parseRoutine({ title: "T", steps: "nope" }).ok).toBe(false);
   });
 
   it("rejects missing fields", () => {
-    expect(parseRoutine({ steps: routine(3).steps }, "medium").ok).toBe(false);
-    expect(parseRoutine({ title: "T" }, "medium").ok).toBe(false);
+    expect(parseRoutine({ steps: routine(3).steps }).ok).toBe(false);
+    expect(parseRoutine({ title: "T" }).ok).toBe(false);
 
     for (const field of ["text", "minutes", "image_prompt"] as const) {
       const raw = routine(3);
       delete (raw.steps[1] as Partial<ReturnType<typeof step>>)[field];
-      const result = parseRoutine(raw, "medium");
+      const result = parseRoutine(raw);
       expect(result.ok).toBe(false);
       expect(!result.ok && result.error).toContain(field);
     }
@@ -74,6 +78,6 @@ describe("parseRoutine", () => {
   it("rejects zero or negative minutes", () => {
     const raw = routine(3);
     raw.steps[0].minutes = 0;
-    expect(parseRoutine(raw, "medium").ok).toBe(false);
+    expect(parseRoutine(raw).ok).toBe(false);
   });
 });

@@ -1,9 +1,10 @@
 import { Schema } from "mongoose";
 import { USER_AVATAR_SOURCES, type UserAvatar } from "@/lib/types";
 import { ownedPlugin } from "../owned";
-import { defineModel, ObjectId, schemaOptions, type Fields } from "../schema";
+import { defineModel, ObjectId, ownerField, schemaOptions, type Fields } from "../schema";
 
 const fields = {
+  user_id: ownerField,
   avatar_id: { type: ObjectId, ref: "Avatar", required: true },
   source: { type: String, enum: USER_AVATAR_SOURCES, required: true },
   unlocked_at: { type: Date, default: Date.now },

@@ -1,9 +1,10 @@
 import { Schema, type Document } from "mongoose";
 import { TOKEN_REASONS, type TokenTransaction } from "@/lib/types";
 import { ownedPlugin } from "../owned";
-import { defineModel, ObjectId, schemaOptions, type Fields } from "../schema";
+import { defineModel, ObjectId, ownerField, schemaOptions, type Fields } from "../schema";
 
 const fields = {
+  user_id: ownerField,
   amount: {
     type: Number,
     required: true,

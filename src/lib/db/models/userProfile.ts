@@ -4,6 +4,8 @@ import { ownedPlugin } from "../owned";
 import { DATE_ONLY, defineModel, ObjectId, schemaOptions, type Fields } from "../schema";
 
 const fields = {
+  // One profile per user.
+  user_id: { type: ObjectId, required: true, unique: true },
   name: { type: String, required: true, trim: true },
   voice_id: { type: String, default: "" },
   speech_speed: { type: Number, min: 0.7, max: 1.2, default: 0.9 },
@@ -17,7 +19,6 @@ const fields = {
 } satisfies Fields<UserProfile>;
 
 const schema = new Schema(fields, schemaOptions);
-// One profile per user.
-schema.plugin(ownedPlugin, { unique: true });
+schema.plugin(ownedPlugin);
 
 export const UserProfileModel = defineModel("UserProfile", schema);

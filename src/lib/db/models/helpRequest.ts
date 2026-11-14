@@ -1,9 +1,10 @@
 import { Schema } from "mongoose";
 import { HELP_REQUEST_TYPES, type HelpRequest } from "@/lib/types";
 import { ownedPlugin } from "../owned";
-import { defineModel, schemaOptions, type Fields } from "../schema";
+import { defineModel, ownerField, schemaOptions, type Fields } from "../schema";
 
 const fields = {
+  user_id: ownerField,
   type: { type: String, enum: HELP_REQUEST_TYPES, required: true },
   input_text: { type: String, default: "" },
   image_url: { type: String, default: null },

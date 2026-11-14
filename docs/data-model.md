@@ -42,7 +42,7 @@ const routines = docs.map((d) => toRecord<Routine>(d));
 | Field | Type | Notes |
 | --- | --- | --- |
 | title | string | |
-| goal | string | What the user said |
+| goal | string | What the user told Bridge. Empty for routines made by hand |
 | days | array of strings | e.g. ["mon","tue"] |
 | start_time | string | "08:00" |
 | active | boolean | |

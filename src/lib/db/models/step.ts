@@ -1,9 +1,10 @@
 import { Schema } from "mongoose";
 import type { Step } from "@/lib/types";
 import { ownedPlugin } from "../owned";
-import { defineModel, ObjectId, schemaOptions, type Fields } from "../schema";
+import { defineModel, ObjectId, ownerField, schemaOptions, type Fields } from "../schema";
 
 const fields = {
+  user_id: ownerField,
   routine_id: { type: ObjectId, ref: "Routine", required: true },
   order: { type: Number, required: true, min: 1 },
   text: { type: String, required: true, trim: true },
