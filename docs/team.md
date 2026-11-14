@@ -21,9 +21,10 @@
 
 1. Brandon adds the shared types (`src/lib/types.ts`) and the AI layer first, before anyone builds on them.
 2. Each person works on their own branch (`brandon/routine-builder`, `adrian/step-player`, `nati/notifications`, `george/help-section`) and only changes files in their own feature folder.
-3. Brandon merges into `main` at each checkpoint.
-4. After each merge, everyone pulls `main` and tests on their phone.
-5. Connecting to Base44 happens after the features work, and Brandon leads it.
+3. To share work: push your branch, merge the latest `dev` into it, make sure tests and the build pass and your feature works, then merge your branch into `dev`. Full steps are in the Git section of `CLAUDE.md`.
+4. Brandon moves `dev` into `main` at each checkpoint, once `dev` is stable. Nobody else pushes to `main`.
+5. After each merge into `dev`, everyone merges `dev` into their branch and tests on their phone.
+6. Connecting to Base44 happens after the features work, and Brandon leads it.
 
 ## Timeline
 
