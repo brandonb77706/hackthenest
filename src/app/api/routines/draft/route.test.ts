@@ -19,6 +19,8 @@ const routine: RoutineInput = {
   goal: "take my medicine",
   days: ["mon"],
   start_time: "08:00",
+  tone: "teal",
+  remind: true,
   steps: [{ text: "Take your pill", minutes: 2 }],
 };
 const post = (body: unknown) =>

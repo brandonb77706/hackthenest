@@ -6,6 +6,8 @@ const valid = (): RoutineInput => ({
   goal: "",
   days: ["mon", "tue"],
   start_time: "08:00",
+  tone: "sea",
+  remind: true,
   steps: [{ text: "Get your pill box", minutes: 1 }],
 });
 
@@ -91,6 +93,13 @@ describe("readRoutineInput", () => {
     const body: Partial<RoutineInput> = valid();
     delete body.goal;
     expect(readRoutineInput(body)?.goal).toBe("");
+  });
+
+  it("defaults to blue and reminders on when color or remind is missing or odd", () => {
+    const body: Record<string, unknown> = { ...valid(), tone: "purple" };
+    delete body.remind;
+    expect(readRoutineInput(body)).toMatchObject({ tone: "teal", remind: true });
+    expect(readRoutineInput({ ...valid(), remind: false })?.remind).toBe(false);
   });
 
   it("rejects bodies with the wrong shape", () => {

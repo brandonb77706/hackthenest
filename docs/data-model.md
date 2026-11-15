@@ -46,6 +46,8 @@ const routines = docs.map((d) => toRecord<Routine>(d));
 | days | array of strings | e.g. ["mon","tue"] |
 | start_time | string | "08:00" |
 | active | boolean | |
+| tone | enum: teal, sea, orange, gold | Color on screen (blue, green, orange, yellow). Default teal |
+| remind | boolean | Show check-ins for this routine. Default true |
 
 ## Step
 | Field | Type | Notes |

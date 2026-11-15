@@ -24,7 +24,16 @@ const body = {
   start_time: "08:00",
   steps: [{ text: "Take your pill", minutes: 2 }],
 };
-const saved: RoutineWithSteps = { id: "r1", user_id: "user-1", active: true, ...body, days: ["mon"], steps: [] };
+const saved: RoutineWithSteps = {
+  id: "r1",
+  user_id: "user-1",
+  active: true,
+  tone: "teal",
+  remind: true,
+  ...body,
+  days: ["mon"],
+  steps: [],
+};
 
 const json = (data: unknown, method = "POST") =>
   new Request("http://test/api/routines", { method, body: JSON.stringify(data) });

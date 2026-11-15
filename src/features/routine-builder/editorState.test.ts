@@ -8,6 +8,8 @@ const start = (texts = ["A", "B", "C"]): EditorState =>
     goal: "",
     days: ["mon"],
     start_time: "08:00",
+    tone: "teal",
+    remind: true,
     steps: texts.map((text) => ({ text, minutes: 5 })),
   });
 
@@ -57,6 +59,28 @@ describe("editorReducer", () => {
     expect(editorReducer(s, { type: "setEveryDay", on: false }).days).toEqual([]);
   });
 
+  it("sets the color and the reminder", () => {
+    let s = editorReducer(start(), { type: "setTone", tone: "gold" });
+    s = editorReducer(s, { type: "setRemind", on: false });
+    expect(s).toMatchObject({ tone: "gold", remind: false });
+  });
+
+  it("loads a whole new routine, e.g. a template or an AI draft", () => {
+    const s = editorReducer(start(), {
+      type: "load",
+      routine: { title: "New", goal: "g", days: ["fri"], start_time: "21:00", tone: "sea", remind: true, steps: [{ text: "X", minutes: 2 }] },
+    });
+    expect(s).toMatchObject({ title: "New", days: ["fri"], start_time: "21:00", tone: "sea" });
+    expect(texts(s)).toEqual(["X"]);
+  });
+
+  it("replaces just the name and steps after Smaller or Bigger steps, keeping days, time, and color", () => {
+    const before = editorReducer(start(), { type: "setTone", tone: "orange" });
+    const s = editorReducer(before, { type: "replaceSteps", title: "Smaller", steps: [{ text: "One", minutes: 1 }, { text: "Two", minutes: 1 }] });
+    expect(texts(s)).toEqual(["One", "Two"]);
+    expect(s).toMatchObject({ title: "Smaller", tone: "orange", days: ["mon"], start_time: "08:00" });
+  });
+
   it("sets the title and time", () => {
     let s = editorReducer(start(), { type: "setTitle", title: "New" });
     s = editorReducer(s, { type: "setTime", time: "09:15" });
@@ -71,6 +95,8 @@ describe("toRoutineInput", () => {
       goal: "g",
       days: ["mon"],
       start_time: "08:00",
+      tone: "teal",
+      remind: true,
       steps: [{ id: "saved1", text: "A", minutes: 1 }, { text: "B", minutes: 2 }],
     });
     expect(toRoutineInput(s).steps).toEqual([{ id: "saved1", text: "A", minutes: 1 }, { text: "B", minutes: 2 }]);
