@@ -138,3 +138,30 @@ Token balance = sum of the user's TokenTransactions. Only server code writes Tok
 ## Independence score
 
 Calculated, not stored: share of steps in the last 7 days marked done without `used_help`. When it stays above 80% for a week, suggest lowering `support_level`.
+
+## GuardianLink
+
+A guardian (parent, aide, job coach) linked to a user. Two separate accounts; one link. Made only by a setup code. Either side can remove it.
+
+| Field | Type | Notes |
+| --- | --- | --- |
+| user_id | id | The person using Bridge |
+| guardian_id | id | Their guardian's account. Unique with user_id |
+| can_see_routines | boolean | Default false. Only the user can change sharing |
+| can_get_lost_alerts | boolean | Default false |
+| can_get_stuck_alerts | boolean | Default false |
+| created_at | date | |
+
+## SetupCode
+
+A one-time code that links a user and a guardian. Either side makes one; the other side enters it. Six characters with no look-alikes (no 0, O, 1, I, L). Works once, for 24 hours; MongoDB deletes it a day after that. Making a new code cancels that person's unused one.
+
+| Field | Type | Notes |
+| --- | --- | --- |
+| code | string | Unique, like "K7P2QX" |
+| from_role | "user" \| "guardian" | Who made it. Only the other side can enter it |
+| created_by | id | |
+| name | string \| null | A guardian setting Bridge up for someone types their name; Welcome fills it in |
+| expires_at | date | 24 hours after it's made |
+| used_at | date \| null | Set when it's entered |
+| used_by | id \| null | |

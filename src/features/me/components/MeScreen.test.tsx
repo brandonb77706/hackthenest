@@ -7,6 +7,9 @@ import type { MeData } from "../service";
 import { buddyChoices } from "../summary";
 import { MeScreen } from "./MeScreen";
 
+// Guardians load their own data; GuardiansSection.test.tsx covers them.
+vi.mock("@/features/guardians/components/GuardiansSection", () => ({ GuardiansSection: () => null }));
+
 const sam: TrustedContact = {
   id: "c1",
   user_id: "u1",

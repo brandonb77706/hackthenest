@@ -107,4 +107,15 @@ describe("WelcomeScreen", () => {
     expect(replace).not.toHaveBeenCalled();
     expect(screen.getByRole("button", { name: "Start using Bridge" })).toBeEnabled();
   });
+
+  it("links with a helper's code and fills in the name they gave", async () => {
+    fetchMock.mockResolvedValue(new Response(JSON.stringify({ link_id: "l1", other_name: "Sam", name: "Jordan" }), { status: 200 }));
+    render(<WelcomeScreen data={data()} />);
+    fireEvent.click(screen.getByRole("button", { name: "I have a code from my helper" }));
+    fireEvent.change(screen.getByLabelText("Code"), { target: { value: "abc234" } });
+    fireEvent.click(screen.getByRole("button", { name: "Link" }));
+    expect(await screen.findByText(/You're linked with Sam/)).toBeInTheDocument();
+    expect(screen.getByLabelText("Your name")).toHaveValue("Jordan");
+    expect(fetchMock).toHaveBeenCalledWith("/api/links/redeem", expect.objectContaining({ body: JSON.stringify({ code: "ABC234" }) }));
+  });
 });

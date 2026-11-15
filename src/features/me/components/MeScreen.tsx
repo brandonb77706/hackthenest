@@ -22,7 +22,10 @@ import {
 import { COLOR_SCHEMES, type ColorSchemeId } from "@/lib/theme";
 import type { TrustedContact, TrustedContactPermissions } from "@/lib/types";
 import { ContactForm } from "@/features/help/components/ContactForm";
+import { GuardiansSection } from "@/features/guardians/components/GuardiansSection";
+import { SHARING, sharingSummary } from "../sharing";
 import { SignOutButton } from "@/features/auth/components/SignOutButton";
+export { sharingSummary } from "../sharing";
 import type { MeData } from "../service";
 import { buddyTag, formatTokens, type BuddyChoice } from "../summary";
 
@@ -31,34 +34,6 @@ type View =
   | { kind: "buddy" }
   | { kind: "schemes" }
   | { kind: "contact"; existing?: TrustedContact };
-
-const SHARING: {
-  key: keyof TrustedContactPermissions;
-  label: string;
-  short: string;
-}[] = [
-  {
-    key: "can_get_lost_alerts",
-    label: "My location, only when I tap I'm lost",
-    short: "your location when you're lost",
-  },
-  {
-    key: "can_get_stuck_alerts",
-    label: "If I'm stuck on a step",
-    short: "when you're stuck",
-  },
-  {
-    key: "can_see_routines",
-    label: "When I finish a routine",
-    short: "finished routines",
-  },
-];
-
-/** "Sees: your location when you're lost · when you're stuck", or "Sees nothing". */
-export function sharingSummary(c: TrustedContactPermissions): string {
-  const on = SHARING.filter((s) => c[s.key]).map((s) => s.short);
-  return on.length ? `Sees: ${on.join(" · ")}` : "Sees nothing";
-}
 
 const byName = (a: TrustedContact, b: TrustedContact) =>
   a.name.localeCompare(b.name, undefined, { sensitivity: "base" });
@@ -528,6 +503,8 @@ export function MeScreen({ data }: { data: MeData }) {
           </button>
         </Dialog>
       )}
+
+      <GuardiansSection />
 
       <h2 className="m-0 mt-2.5 font-display text-[22px] font-bold">
         Color scheme

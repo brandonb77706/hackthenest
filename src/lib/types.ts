@@ -127,6 +127,36 @@ export interface TrustedContact extends Owned, TrustedContactPermissions {
   relation: string;
 }
 
+/**
+ * A guardian (parent, aide, job coach) linked to a user. The accounts stay
+ * separate. The guardian sees only what the user shares, and sharing starts off.
+ */
+export interface GuardianLink extends TrustedContactPermissions {
+  id: ID;
+  /** The person using Bridge */
+  user_id: ID;
+  /** Their guardian's account */
+  guardian_id: ID;
+  created_at: string;
+}
+
+/** Who made a setup code. The other side enters it. */
+export const SETUP_CODE_FROM = ["user", "guardian"] as const;
+export type SetupCodeFrom = (typeof SETUP_CODE_FROM)[number];
+
+/** A one-time code that links a user and a guardian. Lasts 24 hours, works once. */
+export interface SetupCode {
+  id: ID;
+  code: string;
+  from_role: SetupCodeFrom;
+  created_by: ID;
+  /** A guardian setting Bridge up for someone types their name, so Welcome can fill it in */
+  name: string | null;
+  expires_at: string;
+  used_at: string | null;
+  used_by: ID | null;
+}
+
 export const REMINDER_SOURCES = ["routine", "camera"] as const;
 export type ReminderSource = (typeof REMINDER_SOURCES)[number];
 

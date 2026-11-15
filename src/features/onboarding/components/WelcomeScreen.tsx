@@ -5,8 +5,10 @@
 
 import { useEffect, useRef, useState, type FormEvent } from "react";
 import { BuddyAvatar } from "@/components/bridge/BuddyAvatar";
+import { Dialog } from "@/components/bridge/Dialog";
 import { CoinIcon, Icon } from "@/components/bridge/Icon";
 import { br, iconButton } from "@/components/bridge/styles";
+import { EnterCode } from "@/features/guardians/components/EnterCode";
 import { buddyTag } from "@/features/me/summary";
 import { updateSettings } from "@/lib/settings";
 import type { WelcomeData } from "../service";
@@ -23,6 +25,8 @@ export function WelcomeScreen({ data }: { data: WelcomeData }) {
   );
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
+  const [entering, setEntering] = useState(false);
+  const [linkedWith, setLinkedWith] = useState<string | null>(null);
   const heading = useRef<HTMLHeadingElement>(null);
   const firstRender = useRef(true);
 
@@ -111,6 +115,15 @@ export function WelcomeScreen({ data }: { data: WelcomeData }) {
               onChange={(e) => setName(e.target.value)}
               className={br.input}
             />
+            {linkedWith !== null ? (
+              <p role="status" className="m-0 rounded-2xl bg-go-soft px-4 py-3 text-[17px] font-bold">
+                You&apos;re linked with {linkedWith || "your helper"}. They see nothing until you turn it on in Me.
+              </p>
+            ) : (
+              <button type="button" onClick={() => setEntering(true)} className={`${br.link} self-start`}>
+                I have a code from my helper
+              </button>
+            )}
           </>
         )}
 
@@ -180,6 +193,19 @@ export function WelcomeScreen({ data }: { data: WelcomeData }) {
           </button>
         </div>
       </form>
+
+      {entering && (
+        <Dialog title="Enter your code" onClose={() => setEntering(false)}>
+          <EnterCode
+            hint="Your helper got this code when they set up Bridge for you."
+            onLinked={(linked) => {
+              setEntering(false);
+              setLinkedWith(linked.other_name);
+              if (linked.name && !cleanName(name)) setName(linked.name);
+            }}
+          />
+        </Dialog>
+      )}
     </div>
   );
 }
