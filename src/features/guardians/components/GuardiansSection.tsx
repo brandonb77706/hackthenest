@@ -30,7 +30,7 @@ export function GuardiansSection() {
       setLinks(((await res.json()) as { links: LinkedPerson[] }).links);
     } catch {
       setLinks([]);
-      setError("Couldn't load your guardians. Check your internet.");
+      setError("Couldn't load your helpers. Check your internet.");
     }
   }
 
@@ -74,7 +74,7 @@ export function GuardiansSection() {
     }
     setLinks((ls) => ls?.filter((l) => l.link_id !== person.link_id) ?? null);
     setPopup(null);
-    setNote(`${person.name || "Your guardian"} is no longer linked.`);
+    setNote(`${person.name || "Your helper"} is no longer linked.`);
   }
 
   const selected = popup && "id" in popup ? links?.find((l) => l.link_id === popup.id) : undefined;
@@ -86,9 +86,9 @@ export function GuardiansSection() {
 
   return (
     <>
-      <h2 className="m-0 mt-2.5 font-display text-[22px] font-bold">Guardians</h2>
+      <h2 className="m-0 mt-2.5 font-display text-[22px] font-bold">Helpers</h2>
       <p className="m-0 -mt-1.5 text-[16px] text-ink2">
-        A parent or helper with their own Bridge account. They see only what you turn on.
+        Someone you trust, like a parent or job coach, with their own Bridge account. They see only what you turn on.
       </p>
       {note && (
         <p role="status" className="m-0 rounded-2xl bg-go-soft px-4 py-3 text-[17px] font-bold">
@@ -98,7 +98,7 @@ export function GuardiansSection() {
       {links === null ? (
         <p className="m-0 text-ink2">Loading…</p>
       ) : links.length === 0 ? (
-        <p className="m-0 rounded-2xl bg-sunken px-4 py-3.5">No guardian yet.</p>
+        <p className="m-0 rounded-2xl bg-sunken px-4 py-3.5">No helper yet.</p>
       ) : (
         <ul className={`${br.card} m-0 flex list-none flex-col overflow-hidden rounded-[18px] p-0`}>
           {links.map((g, i) => (
@@ -110,7 +110,7 @@ export function GuardiansSection() {
                   setPopup({ kind: "guardian", id: g.link_id });
                 }}
                 aria-haspopup="dialog"
-                aria-label={`${g.name}, guardian. ${sharingSummary(g)}. Change what they can see.`}
+                aria-label={`${g.name}, helper. ${sharingSummary(g)}. Change what they can see.`}
                 className="flex min-h-[72px] w-full items-center gap-3 border-0 bg-transparent px-4 py-3 text-left text-ink"
               >
                 <span
@@ -122,7 +122,7 @@ export function GuardiansSection() {
                 <span className="flex min-w-0 grow flex-col">
                   <span className="font-display text-[18px] font-bold leading-tight">
                     {g.name || g.email}
-                    <span className="font-normal text-ink2"> · Guardian</span>
+                    <span className="font-normal text-ink2"> · Helper</span>
                   </span>
                   <span className="text-[15px] text-ink2">{sharingSummary(g)}</span>
                 </span>
@@ -133,7 +133,7 @@ export function GuardiansSection() {
         </ul>
       )}
       <button type="button" onClick={showCode} className={`${br.ghost} min-h-[54px] rounded-2xl text-[17px]`}>
-        + Add a guardian
+        + Add a helper
       </button>
       <button
         type="button"
@@ -143,13 +143,13 @@ export function GuardiansSection() {
         }}
         className={br.link}
       >
-        I have a code from my guardian
+        I have a code from my helper
       </button>
 
       {popup?.kind === "code" && (
-        <Dialog title="Add a guardian" onClose={() => setPopup(null)}>
+        <Dialog title="Add a helper" onClose={() => setPopup(null)}>
           <p className="m-0 text-[17px] text-ink2">
-            Give this code to your guardian. They sign in on the Parent / guardian side and enter it.
+            Give this code to your helper. They sign in on the Parent / guardian side and enter it.
           </p>
           {code ? <CodeCard code={code.code} expiresAt={code.expires_at} /> : !error && <p className="m-0">Making a code…</p>}
           {errorLine}
@@ -170,10 +170,10 @@ export function GuardiansSection() {
       {popup?.kind === "enter" && (
         <Dialog title="Enter a code" onClose={() => setPopup(null)}>
           <EnterCode
-            hint="Your guardian can make a code when they set up Bridge for you."
+            hint="Your helper can make a code when they set up Bridge for you."
             onLinked={(linked) => {
               setPopup(null);
-              setNote(`You're linked with ${linked.other_name || "your guardian"}. They see nothing until you turn it on.`);
+              setNote(`You're linked with ${linked.other_name || "your helper"}. They see nothing until you turn it on.`);
               void load();
             }}
           />
@@ -181,7 +181,7 @@ export function GuardiansSection() {
       )}
 
       {popup?.kind === "guardian" && selected && (
-        <Dialog title={`What ${selected.name || "your guardian"} can see`} onClose={() => setPopup(null)}>
+        <Dialog title={`What ${selected.name || "your helper"} can see`} onClose={() => setPopup(null)}>
           {selected.email && <p className="m-0 -mt-2 text-ink2">{selected.email}</p>}
           <p className="m-0 text-[16px] text-ink2">Everything starts off. Nothing is shared unless you turn it on.</p>
           <div className="flex flex-col gap-2.5">
@@ -197,7 +197,7 @@ export function GuardiansSection() {
             onClick={() => setPopup({ kind: "remove", id: selected.link_id })}
             className={`${br.ghost} min-h-[54px] rounded-2xl text-[17px] text-danger-text`}
           >
-            Remove guardian
+            Remove helper
           </button>
           <button type="button" onClick={() => setPopup(null)} className={`${br.cta} min-h-[58px] rounded-2xl text-[20px]`}>
             Done
@@ -206,7 +206,7 @@ export function GuardiansSection() {
       )}
 
       {popup?.kind === "remove" && selected && (
-        <Dialog title={`Remove ${selected.name || "this guardian"}?`} onClose={() => setPopup({ kind: "guardian", id: selected.link_id })}>
+        <Dialog title={`Remove ${selected.name || "this helper"}?`} onClose={() => setPopup({ kind: "guardian", id: selected.link_id })}>
           <p className="m-0 text-[17px]">They won&apos;t be linked to you anymore. You can add them again with a new code.</p>
           {errorLine}
           <button

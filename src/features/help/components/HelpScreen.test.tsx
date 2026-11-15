@@ -190,7 +190,7 @@ describe("Speak for me", () => {
     expect(screen.getByRole("heading", { name: "Speak for me" })).toHaveFocus();
 
     await user.type(screen.getByLabelText("What do you want to say?"), "Where is the bus stop?");
-    await user.click(screen.getByRole("button", { name: /Say it/ }));
+    await user.click(screen.getByRole("button", { name: "Read it out loud" }));
     expect(play).toHaveBeenCalledWith("Where is the bus stop?");
 
     await user.click(screen.getByRole("button", { name: "Show big" }));

@@ -84,7 +84,19 @@ describe("LoginScreen", () => {
     signInSocial.mockResolvedValue({ data: {}, error: null });
     render(<LoginScreen google />);
     fireEvent.click(screen.getByRole("button", { name: /Continue with Google/ }));
-    expect(signInSocial).toHaveBeenCalledWith(expect.objectContaining({ provider: "google", callbackURL: "/" }));
+    expect(signInSocial).toHaveBeenCalledWith(
+      expect.objectContaining({ provider: "google", callbackURL: "/", additionalData: { role: "user" } }),
+    );
+  });
+
+  it("tells Google sign-up which side was picked", () => {
+    signInSocial.mockResolvedValue({ data: {}, error: null });
+    render(<LoginScreen google />);
+    fireEvent.click(screen.getByRole("tab", { name: "Parent / guardian" }));
+    fireEvent.click(screen.getByRole("button", { name: /Continue with Google/ }));
+    expect(signInSocial).toHaveBeenCalledWith(
+      expect.objectContaining({ callbackURL: "/guardian", additionalData: { role: "guardian" } }),
+    );
   });
 
   it("says to wait when there were too many tries", async () => {

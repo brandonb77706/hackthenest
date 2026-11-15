@@ -12,16 +12,16 @@ interface Tab {
   href: string;
   label: string;
   icon: IconName;
-  /** What the Buddy says on this tab */
-  tip: string;
+  /** What the Buddy says on this tab. No tip: the Buddy just sits there. */
+  tip?: string;
 }
 
 export const TABS: Tab[] = [
   { href: "/", label: "Today", icon: "today", tip: "Tap Start when you're ready. I'll read each step to you." },
   { href: "/routines", label: "Routines", icon: "routines", tip: "Tap a card to start that routine. Tap New to make one." },
-  { href: "/scan", label: "Scan", icon: "scan", tip: "Got a letter or a bill? Soon you can take a picture and I'll explain it." },
+  { href: "/scan", label: "Scan", icon: "scan", tip: "Got a letter or a bill? Take a picture and I'll explain it." },
   { href: "/get-help", label: "Help", icon: "help", tip: "Pick what you need. Nothing gets sent until you tap." },
-  { href: "/me", label: "Me", icon: "me", tip: "This is your page. More is coming soon." },
+  { href: "/me", label: "Me", icon: "me" },
 ];
 
 function isActive(pathname: string, href: string): boolean {
@@ -41,7 +41,7 @@ export function TabBar() {
     if (tipOpen) {
       setTipFor(null);
       stop();
-    } else {
+    } else if (current.tip) {
       setTipFor(current.href);
       void play(current.tip);
     }
@@ -58,7 +58,16 @@ export function TabBar() {
         </div>
       )}
 
-      {showBuddy && (
+      {showBuddy && !current.tip && (
+        <span
+          aria-hidden="true"
+          className="fixed bottom-[77px] left-1/2 z-20 ml-[calc(min(100vw,480px)/2-96px)] size-[74px]"
+        >
+          <Buddy size={74} paws />
+        </span>
+      )}
+
+      {showBuddy && current.tip && (
         <button
           type="button"
           onClick={toggleTip}

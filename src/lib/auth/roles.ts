@@ -9,6 +9,15 @@ export function toRole(value: unknown): Role {
   return value === "guardian" ? "guardian" : "user";
 }
 
+/**
+ * The role a new account gets. Email sign-up sends it with the form. Google
+ * sign-up can't, so the login page passes it through the Google sign-in
+ * (`oauthRole`), and that wins when present. Only ever "user" or "guardian".
+ */
+export function signUpRole(formRole: unknown, oauthRole: unknown): Role {
+  return toRole(oauthRole ?? formRole);
+}
+
 /** Where to go after signing in. The guardian view comes in a later step. */
 export function homeFor(role: Role): string {
   return role === "guardian" ? "/guardian" : "/";

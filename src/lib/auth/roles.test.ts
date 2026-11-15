@@ -1,5 +1,20 @@
 import { describe, expect, it } from "vitest";
-import { homeFor, placeholderName, safeNext, toRole } from "./roles";
+import { homeFor, placeholderName, safeNext, signUpRole, toRole } from "./roles";
+
+describe("signUpRole", () => {
+  it("uses the side picked before Google sign-up", () => {
+    expect(signUpRole("user", "guardian")).toBe("guardian");
+    expect(signUpRole(undefined, "guardian")).toBe("guardian");
+  });
+  it("uses the email form's role when there was no Google sign-in", () => {
+    expect(signUpRole("guardian", undefined)).toBe("guardian");
+    expect(signUpRole("user", undefined)).toBe("user");
+  });
+  it("never grants anything but user or guardian", () => {
+    expect(signUpRole("user", "admin")).toBe("user");
+    expect(signUpRole("admin", undefined)).toBe("user");
+  });
+});
 
 describe("toRole", () => {
   it("keeps guardian", () => expect(toRole("guardian")).toBe("guardian"));

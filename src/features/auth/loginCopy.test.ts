@@ -3,7 +3,7 @@ import { loginCopy, signInErrorText } from "./loginCopy";
 
 describe("loginCopy", () => {
   it("matches the design for each side", () => {
-    expect(loginCopy("user", false)).toMatchObject({ cta: "Sign in", tagline: "One step at a time." });
+    expect(loginCopy("user", false)).toMatchObject({ cta: "Sign in", tagline: "Helping you do more on your own." });
     expect(loginCopy("guardian", false)).toMatchObject({
       cta: "Sign in as parent / guardian",
       footerLink: "Create a guardian account",

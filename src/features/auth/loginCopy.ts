@@ -25,7 +25,7 @@ export function loginCopy(role: Role, creating: boolean): LoginCopy {
     };
   }
   return {
-    tagline: "One step at a time.",
+    tagline: "Helping you do more on your own.",
     heading: creating ? "Make your Bridge account" : "Welcome back",
     sub: creating ? "Use your email and a password you'll remember." : "Sign in to see today's routines.",
     emailHint: "jordan@example.com",

@@ -25,15 +25,15 @@ describe("GuardiansSection", () => {
   it("says when there's no guardian yet", async () => {
     fetchMock.mockResolvedValue(json({ links: [] }));
     render(<GuardiansSection />);
-    expect(await screen.findByText("No guardian yet.")).toBeInTheDocument();
+    expect(await screen.findByText("No helper yet.")).toBeInTheDocument();
   });
 
   it("shows a code to give a guardian", async () => {
     fetchMock.mockResolvedValueOnce(json({ links: [] })).mockResolvedValueOnce(json({ code: "K7P2QX", expires_at: new Date(Date.now() + 864e5).toISOString() }));
     render(<GuardiansSection />);
-    await screen.findByText("No guardian yet.");
-    fireEvent.click(screen.getByRole("button", { name: "+ Add a guardian" }));
-    const dialog = await screen.findByRole("dialog", { name: "Add a guardian" });
+    await screen.findByText("No helper yet.");
+    fireEvent.click(screen.getByRole("button", { name: "+ Add a helper" }));
+    const dialog = await screen.findByRole("dialog", { name: "Add a helper" });
     expect(await within(dialog).findByText("K7P 2QX")).toBeInTheDocument();
     expect(within(dialog).getByText(/Works once/)).toBeInTheDocument();
     expect(fetchMock).toHaveBeenCalledWith("/api/links/codes", expect.objectContaining({ method: "POST" }));
@@ -42,7 +42,7 @@ describe("GuardiansSection", () => {
   it("starts with sharing off and saves each switch", async () => {
     fetchMock.mockResolvedValueOnce(json({ links: [sam] })).mockResolvedValueOnce(json({ can_see_routines: true }));
     render(<GuardiansSection />);
-    fireEvent.click(await screen.findByRole("button", { name: /Sam, guardian. Sees nothing/ }));
+    fireEvent.click(await screen.findByRole("button", { name: /Sam, helper. Sees nothing/ }));
     const dialog = screen.getByRole("dialog", { name: "What Sam can see" });
     const routines = within(dialog).getByRole("switch", { name: "When I finish a routine" });
     expect(routines).toHaveAttribute("aria-checked", "false");
@@ -56,8 +56,8 @@ describe("GuardiansSection", () => {
   it("asks before removing a guardian", async () => {
     fetchMock.mockResolvedValueOnce(json({ links: [sam] })).mockResolvedValueOnce(new Response(null, { status: 204 }));
     render(<GuardiansSection />);
-    fireEvent.click(await screen.findByRole("button", { name: /Sam, guardian/ }));
-    fireEvent.click(screen.getByRole("button", { name: "Remove guardian" }));
+    fireEvent.click(await screen.findByRole("button", { name: /Sam, helper/ }));
+    fireEvent.click(screen.getByRole("button", { name: "Remove helper" }));
     expect(screen.getByRole("dialog", { name: "Remove Sam?" })).toBeInTheDocument();
     expect(fetchMock).toHaveBeenCalledTimes(1);
     fireEvent.click(screen.getByRole("button", { name: "Remove" }));
