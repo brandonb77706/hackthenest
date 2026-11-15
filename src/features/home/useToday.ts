@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { syncSettings } from "@/lib/settings";
 import type { TodayResponse } from "./service";
 
 function timeZone(): string {
@@ -31,7 +32,9 @@ export function useToday(): TodayState {
         const response = await fetch(`/api/today?tz=${encodeURIComponent(timeZone())}`, { cache: "no-store" });
         if (!response.ok) throw new Error(String(response.status));
         const today = (await response.json()) as TodayResponse;
-        if (!cancelled) setState({ today, loading: false, error: "", hour: new Date().getHours() });
+        if (cancelled) return;
+        if (today.settings) syncSettings(today.settings);
+        setState({ today, loading: false, error: "", hour: new Date().getHours() });
       } catch {
         if (!cancelled) {
           setState({

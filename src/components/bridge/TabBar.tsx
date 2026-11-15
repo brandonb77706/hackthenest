@@ -2,9 +2,10 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useState } from "react";
+import { useState, useSyncExternalStore } from "react";
+import { getServerSettings, getSettings, subscribeSettings } from "@/lib/settings";
 import { play, stop } from "@/lib/voice/player";
-import { Buddy, BUDDY_NAME } from "./Buddy";
+import { Buddy } from "./Buddy";
 import { Icon, type IconName } from "./Icon";
 
 interface Tab {
@@ -34,6 +35,7 @@ export function TabBar() {
   // The tip closes on its own when you change tabs.
   const [tipFor, setTipFor] = useState<string | null>(null);
   const tipOpen = tipFor === current.href;
+  const { showBuddy, buddyName } = useSyncExternalStore(subscribeSettings, getSettings, getServerSettings);
 
   function toggleTip() {
     if (tipOpen) {
@@ -47,28 +49,30 @@ export function TabBar() {
 
   return (
     <>
-      {tipOpen && (
+      {showBuddy && tipOpen && (
         <div
           role="status"
           className="fixed bottom-[172px] left-1/2 z-30 ml-[calc(min(100vw,480px)/2-266px)] w-[250px] rounded-[18px] border-2 border-line bg-surface px-4 py-3.5 text-[16px] text-ink shadow-[0_8px_24px_rgba(0,0,0,0.14)]"
         >
-          <strong className="font-display">{BUDDY_NAME}:</strong> {current.tip}
+          <strong className="font-display">{buddyName}:</strong> {current.tip}
         </div>
       )}
 
-      <button
-        type="button"
-        onClick={toggleTip}
-        aria-label={`${BUDDY_NAME} the beaver. Tap for a tip.`}
-        aria-expanded={tipOpen}
-        className="br-hold fixed bottom-[77px] left-1/2 z-20 ml-[calc(min(100vw,480px)/2-96px)] size-[74px] border-0 bg-transparent p-0"
-      >
-        <Buddy size={74} paws />
-      </button>
+      {showBuddy && (
+        <button
+          type="button"
+          onClick={toggleTip}
+          aria-label={`${buddyName}, your Buddy. Tap for a tip.`}
+          aria-expanded={tipOpen}
+          className="br-hold fixed bottom-[77px] left-1/2 z-20 ml-[calc(min(100vw,480px)/2-96px)] size-[74px] border-0 bg-transparent p-0"
+        >
+          <Buddy size={74} paws />
+        </button>
+      )}
 
       <nav
         aria-label="Main"
-        className="fixed bottom-0 left-1/2 z-10 box-border grid h-[84px] w-full max-w-[480px] -translate-x-1/2 grid-cols-5 border-t-[3px] border-cta bg-surface px-1.5 py-2"
+        className="fixed bottom-0 left-1/2 z-10 box-border grid h-[84px] w-full max-w-[480px] -translate-x-1/2 grid-cols-5 border-t-[3px] border-tab-border bg-surface px-1.5 py-2"
       >
         {TABS.map((tab) => {
           const on = tab.href === current.href;

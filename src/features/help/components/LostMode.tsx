@@ -222,7 +222,7 @@ export function LostMode({
         <button
           type="button"
           onClick={() => setConfirm911(true)}
-          className="br-press mt-1 h-[60px] rounded-2xl border-0 bg-danger font-display text-[21px] font-bold text-white shadow-[0_5px_0_var(--br-danger-edge)]"
+          className="br-press mt-1 h-[60px] rounded-2xl border-0 bg-danger font-display text-[21px] font-bold text-on-danger shadow-[0_5px_0_var(--br-danger-edge)]"
         >
           Call 911
         </button>

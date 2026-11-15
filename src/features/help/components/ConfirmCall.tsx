@@ -36,7 +36,7 @@ export function ConfirmCall({
         href={`tel:${number}`}
         className={`br-press flex h-14 items-center justify-center gap-2 rounded-2xl font-display text-[20px] font-bold no-underline ${
           urgent
-            ? "border-0 bg-danger text-white shadow-[0_5px_0_var(--br-danger-edge)]"
+            ? "border-0 bg-danger text-on-danger shadow-[0_5px_0_var(--br-danger-edge)]"
             : br.cta
         }`}
       >

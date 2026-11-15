@@ -196,7 +196,7 @@ export function HelpScreen({ userName = "" }: Props) {
               setConfirm(open ? null : (only ?? "pick"));
             }}
             aria-expanded={confirm === "pick" || calling !== null}
-            className="tone-sea br-press flex min-h-[140px] flex-col items-start gap-1.5 rounded-[20px] border-0 bg-tone p-4 text-left text-ink shadow-[0_5px_0_var(--t-edge)]"
+            className="tone-sea br-press flex min-h-[140px] flex-col items-start gap-1.5 rounded-[20px] border-0 bg-tone p-4 text-left text-tone-ink shadow-[0_5px_0_var(--t-edge)]"
           >
             <Icon name="phone" size={32} />
             <span className="font-display text-[21px] font-bold">
@@ -214,7 +214,7 @@ export function HelpScreen({ userName = "" }: Props) {
             onClick={() =>
               go(first ? { kind: "contacts" } : { kind: "contact" })
             }
-            className="tone-sea br-press flex min-h-[140px] flex-col items-start gap-1.5 rounded-[20px] border-0 bg-tone p-4 text-left text-ink shadow-[0_5px_0_var(--t-edge)]"
+            className="tone-sea br-press flex min-h-[140px] flex-col items-start gap-1.5 rounded-[20px] border-0 bg-tone p-4 text-left text-tone-ink shadow-[0_5px_0_var(--t-edge)]"
           >
             <Icon name="phone" size={32} />
             <span className="font-display text-[21px] font-bold">
@@ -230,7 +230,7 @@ export function HelpScreen({ userName = "" }: Props) {
         <button
           type="button"
           onClick={() => go({ kind: "lost" })}
-          className="tone-teal br-press flex min-h-[140px] flex-col items-start gap-1.5 rounded-[20px] border-0 bg-tone p-4 text-left text-ink shadow-[0_5px_0_var(--t-edge)]"
+          className="tone-teal br-press flex min-h-[140px] flex-col items-start gap-1.5 rounded-[20px] border-0 bg-tone p-4 text-left text-tone-ink shadow-[0_5px_0_var(--t-edge)]"
         >
           <Icon name="location" size={32} />
           <span className="font-display text-[21px] font-bold">
@@ -297,7 +297,7 @@ export function HelpScreen({ userName = "" }: Props) {
       <button
         type="button"
         onClick={() => go({ kind: "speak" })}
-        className="tone-orange br-press flex min-h-[84px] items-center gap-3.5 rounded-[20px] border-0 bg-tone px-[18px] py-3.5 text-left text-ink shadow-[0_5px_0_var(--t-edge)]"
+        className="tone-orange br-press flex min-h-[84px] items-center gap-3.5 rounded-[20px] border-0 bg-tone px-[18px] py-3.5 text-left text-tone-ink shadow-[0_5px_0_var(--t-edge)]"
       >
         <Icon name="speakerLoud" size={34} className="shrink-0" />
         <span className="flex flex-col">
@@ -356,7 +356,7 @@ export function HelpScreen({ userName = "" }: Props) {
           <button
             type="button"
             onClick={() => setConfirm("911")}
-            className="br-press h-[60px] rounded-2xl border-0 bg-danger font-display text-[21px] font-bold text-white shadow-[0_5px_0_var(--br-danger-edge)]"
+            className="br-press h-[60px] rounded-2xl border-0 bg-danger font-display text-[21px] font-bold text-on-danger shadow-[0_5px_0_var(--br-danger-edge)]"
           >
             Call 911
           </button>

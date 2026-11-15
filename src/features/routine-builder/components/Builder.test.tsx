@@ -45,6 +45,7 @@ describe("Builder: choosing how to start", () => {
     for (const name of ["Take medicine", "Morning", "Get ready for work", "Bedtime"]) {
       expect(screen.getByRole("button", { name })).toBeInTheDocument();
     }
+    expect(screen.getByRole("link", { name: "Grocery shopping" })).toHaveAttribute("href", "/groceries");
     expect(screen.getByRole("progressbar")).toHaveAccessibleName("Making your routine, part 1 of 3");
   });
 
@@ -79,7 +80,7 @@ describe("Builder: Tell Bridge", () => {
     await user.click(screen.getByRole("button", { name: "Make my steps" }));
 
     expect(screen.getByRole("heading", { name: "Making your steps…" })).toBeInTheDocument();
-    expect(screen.getByText(/Bix is breaking “walk the dog every morning” into small, clear steps/)).toBeInTheDocument();
+    expect(screen.getByText(/Fox is breaking “walk the dog every morning” into small, clear steps/)).toBeInTheDocument();
 
     await act(async () => finish(drafted(draft(["Find the dog leash", "Walk around the block"]))));
 

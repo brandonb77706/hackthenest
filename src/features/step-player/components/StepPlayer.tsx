@@ -202,7 +202,7 @@ export function StepPlayer({ routineId, walkthrough, onExit, startStep = 1 }: Pr
       {showResults ? (
         <>
           <div className="flex grow flex-col items-center justify-center gap-[22px] px-6 text-center">
-            <div className="flex size-[136px] items-center justify-center rounded-full bg-go text-ink shadow-[0_6px_0_var(--br-go-edge)]">
+            <div className="flex size-[136px] items-center justify-center rounded-full bg-go text-on-go shadow-[0_6px_0_var(--br-go-edge)]">
               <Icon name="check" size={68} strokeWidth={3} />
             </div>
             <h1 className="m-0 font-display text-[32px] font-bold leading-[1.15]">{routine.title} done</h1>
@@ -232,7 +232,7 @@ export function StepPlayer({ routineId, walkthrough, onExit, startStep = 1 }: Pr
       ) : (
         <>
           <div className="flex grow flex-col items-center justify-center gap-4 px-8 text-center">
-            <div className="mb-2 flex size-[136px] items-center justify-center rounded-full bg-tone text-ink shadow-[0_6px_0_var(--t-edge)]">
+            <div className="mb-2 flex size-[136px] items-center justify-center rounded-full bg-tone text-tone-ink shadow-[0_6px_0_var(--t-edge)]">
               <Icon name={stepIcon(step.text)} size={60} />
             </div>
             <p className="m-0 font-display text-[17px] font-semibold text-ink2">
