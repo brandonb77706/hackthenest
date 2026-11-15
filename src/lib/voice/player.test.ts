@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { pickBrowserVoice, voiceProvider } from "./player";
+import { pickBrowserVoice, splitForSpeech, voiceProvider } from "./player";
 
 afterEach(() => vi.unstubAllEnvs());
 
@@ -40,5 +40,33 @@ describe("pickBrowserVoice", () => {
   it("returns nothing when there's no English voice, so the browser default is used", () => {
     expect(pickBrowserVoice([v("Thomas", "fr-FR")])).toBeUndefined();
     expect(pickBrowserVoice([])).toBeUndefined();
+  });
+});
+
+describe("splitForSpeech", () => {
+  it("keeps short text as one piece", () => {
+    expect(splitForSpeech("Brush your teeth")).toEqual(["Brush your teeth"]);
+  });
+
+  it("splits long text at the ends of sentences, packing them up to the limit", () => {
+    const text = "Electric bill from DTE. You owe $84.12. Here's what to do. 1. Pay by November 28.";
+    expect(splitForSpeech(text)).toEqual([text]);
+    expect(splitForSpeech(text, 40)).toEqual(["Electric bill from DTE. You owe $84.12.", "Here's what to do. 1.", "Pay by November 28."]);
+  });
+
+  it("never splits inside a number like $84.12", () => {
+    for (const piece of splitForSpeech("You owe $84.12 today. Thanks.", 20)) expect(piece).not.toMatch(/\$84\.$/);
+  });
+
+  it("breaks a very long sentence at commas or spaces, never past the limit", () => {
+    const long = Array.from({ length: 40 }, (_, i) => `word${i}`).join(", ") + ".";
+    const pieces = splitForSpeech(long, 60);
+    expect(pieces.length).toBeGreaterThan(1);
+    for (const p of pieces) expect(p.length).toBeLessThanOrEqual(60);
+    expect(pieces.join(" ").replace(/\s+/g, " ")).toBe(long);
+  });
+
+  it("returns nothing for empty text", () => {
+    expect(splitForSpeech("   ")).toEqual([]);
   });
 });
