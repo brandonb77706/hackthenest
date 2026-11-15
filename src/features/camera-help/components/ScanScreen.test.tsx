@@ -53,7 +53,9 @@ describe("ScanScreen", () => {
     render(<ScanScreen prepare={prepare} />);
     choose("camera-input");
 
-    expect(await screen.findByRole("heading", { name: "Electric bill from DTE." })).toHaveFocus();
+    const heading = await screen.findByRole("heading", { name: "Electric bill from DTE." });
+    // Focus moves to the heading just after it appears.
+    await waitFor(() => expect(heading).toHaveFocus());
     expect(screen.getByText("Important · due Nov 28")).toBeInTheDocument();
     expect(screen.getByText(/You owe \$84.12/)).toBeInTheDocument();
     expect(screen.getAllByRole("listitem").map((li) => li.textContent)).toEqual(bill.actions);
