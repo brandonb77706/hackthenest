@@ -8,6 +8,7 @@ const fields = {
   name: { type: String, required: true, trim: true },
   method: { type: String, enum: CONTACT_METHODS, required: true },
   contact: { type: String, required: true, trim: true },
+  relation: { type: String, default: "", trim: true },
   // Sharing is always off until the user turns it on.
   can_see_routines: { type: Boolean, default: DEFAULT_CONTACT_PERMISSIONS.can_see_routines },
   can_get_lost_alerts: { type: Boolean, default: DEFAULT_CONTACT_PERMISSIONS.can_get_lost_alerts },

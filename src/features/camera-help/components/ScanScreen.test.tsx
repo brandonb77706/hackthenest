@@ -52,7 +52,6 @@ describe("ScanScreen", () => {
   it("reads the photo and shows what it is, what to do, and the due date", async () => {
     render(<ScanScreen prepare={prepare} />);
     choose("camera-input");
-    expect(screen.getByRole("status")).toHaveTextContent("Reading it for you…");
 
     expect(await screen.findByRole("heading", { name: "Electric bill from DTE." })).toHaveFocus();
     expect(screen.getByText("Important · due Nov 28")).toBeInTheDocument();
@@ -63,6 +62,13 @@ describe("ScanScreen", () => {
     expect(url).toBe("/api/scan");
     expect(JSON.parse(init.body as string)).toEqual({ image: { data: btoa("small photo"), mime: "image/jpeg" } });
     await waitFor(() => expect(play).toHaveBeenCalledWith(`${bill.what_it_is} ${bill.summary}`));
+  });
+
+  it("shows 'Reading it for you…' while it waits", async () => {
+    fetchMock.mockReturnValue(new Promise(() => {}));
+    render(<ScanScreen prepare={prepare} />);
+    choose("camera-input");
+    expect(await screen.findByRole("status")).toHaveTextContent("Reading it for you…");
   });
 
   it("'Read it to me' reads everything, including the steps and dates", async () => {

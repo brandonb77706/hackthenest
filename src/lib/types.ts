@@ -117,6 +117,8 @@ export interface TrustedContact extends Owned, TrustedContactPermissions {
   name: string;
   method: ContactMethod;
   contact: string;
+  /** Who they are to the user, like "Your brother". Shown under their name */
+  relation: string;
 }
 
 export const REMINDER_SOURCES = ["routine", "camera"] as const;

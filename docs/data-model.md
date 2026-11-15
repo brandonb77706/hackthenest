@@ -83,6 +83,7 @@ const routines = docs.map((d) => toRecord<Routine>(d));
 | name | string | |
 | method | enum: sms, email, telegram | |
 | contact | string | |
+| relation | string | Who they are, like "Your brother". Shown under their name |
 | can_see_routines | boolean | Default false |
 | can_get_lost_alerts | boolean | Default false |
 | can_get_stuck_alerts | boolean | Default false |
