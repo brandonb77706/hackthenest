@@ -9,6 +9,7 @@ import {
   AvatarModel,
   CheckInModel,
   connectDB,
+  DailyChallengeModel,
   GuardianLinkModel,
   DEMO_USER_ID,
   HelpRequestModel,
@@ -39,6 +40,7 @@ const AVATARS: Omit<Avatar, "id">[] = [
 const ALL_MODELS = [
   AvatarModel,
   CheckInModel,
+  DailyChallengeModel,
   GuardianLinkModel,
   HelpRequestModel,
   ReminderModel,

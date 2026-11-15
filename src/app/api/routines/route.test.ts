@@ -6,6 +6,8 @@ vi.mock("@/lib/db", () => ({ getCurrentUserId: vi.fn(async () => "user-1") }));
 const refuseIfLocked = vi.fn(async (): Promise<Response | null> => null);
 vi.mock("@/features/guardians/service", () => ({ refuseIfLocked: (...a: unknown[]) => refuseIfLocked(...(a as [])) }));
 const lockedReply = () => Response.json({ error: "Sam manages your routines. Ask Sam to make changes.", locked: true }, { status: 403 });
+const claimChallenges = vi.fn<(...a: unknown[]) => Promise<unknown[]>>(async () => []);
+vi.mock("@/features/rewards/challengeService", () => ({ claimChallenges: (...a: unknown[]) => claimChallenges(...a) }));
 vi.mock("@/features/routine-builder/service", () => ({
   listRoutines: vi.fn(),
   createRoutine: vi.fn(),
@@ -123,5 +125,27 @@ describe("when a guardian manages routines", () => {
     expect(s.deleteRoutine).not.toHaveBeenCalled();
     expect(refuseIfLocked).toHaveBeenCalledWith("user-1", "routines");
     refuseIfLocked.mockResolvedValue(null);
+  });
+});
+
+describe("making a routine and the daily challenge", () => {
+  it("checks the challenge in the user's day and says when it's done", async () => {
+    s.createRoutine.mockResolvedValue({ id: "r1" } as never);
+    const done = { id: "new_routine", title: "Make a new routine", tokens: 30, done: true, progress: "Made one today", percent: 100 };
+    claimChallenges.mockResolvedValueOnce([done]);
+    const res = await POST(new Request("http://test/api/routines?tz=America%2FChicago", { method: "POST", body: JSON.stringify(body) }));
+    expect(res.status).toBe(201);
+    expect(await res.json()).toEqual({ routine: { id: "r1" }, challenges: [done] });
+    expect(claimChallenges).toHaveBeenCalledWith("user-1", "America/Chicago");
+  });
+
+  it("still saves the routine when checking challenges fails", async () => {
+    s.createRoutine.mockResolvedValue({ id: "r1" } as never);
+    claimChallenges.mockRejectedValueOnce(new Error("db down"));
+    const spy = vi.spyOn(console, "error").mockImplementation(() => {});
+    const res = await POST(new Request("http://test", { method: "POST", body: JSON.stringify(body) }));
+    expect(res.status).toBe(201);
+    expect(await res.json()).toEqual({ routine: { id: "r1" }, challenges: [] });
+    spy.mockRestore();
   });
 });

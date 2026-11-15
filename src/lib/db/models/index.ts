@@ -1,6 +1,7 @@
 // All models. Server code only. Call connectDB() before querying.
 export { AvatarModel } from "./avatar";
 export { CheckInModel } from "./checkIn";
+export { DailyChallengeModel } from "./dailyChallenge";
 export { GuardianLinkModel } from "./guardianLink";
 export { HelpRequestModel } from "./helpRequest";
 export { ReminderModel } from "./reminder";

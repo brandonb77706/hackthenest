@@ -3,6 +3,8 @@ import { checkRoutine, readRoutineInput } from "@/features/routine-builder/routi
 import { createRoutine, listRoutines } from "@/features/routine-builder/service";
 import { getCurrentUserId } from "@/lib/db";
 import { refuseIfLocked } from "@/features/guardians/service";
+import { claimChallenges } from "@/features/rewards/challengeService";
+import type { ChallengeStatus } from "@/features/rewards/challenges";
 
 /** The user's routines, with how many steps each has. */
 export async function GET() {
@@ -24,6 +26,12 @@ export async function POST(request: Request) {
   const locked = await refuseIfLocked(userId, "routines");
   if (locked) return locked;
   const routine = await createRoutine(userId, checked.value);
-  // Rewards (Nati): award the one-time first_routine tokens here. See docs/rewards.md.
-  return Response.json({ routine }, { status: 201 });
+  // Daily challenge: making a routine. A rewards problem never blocks saving.
+  let challenges: ChallengeStatus[] = [];
+  try {
+    challenges = await claimChallenges(userId, new URL(request.url).searchParams.get("tz") || "UTC");
+  } catch (error) {
+    console.error("[rewards] could not check challenges", error);
+  }
+  return Response.json({ routine, challenges }, { status: 201 });
 }

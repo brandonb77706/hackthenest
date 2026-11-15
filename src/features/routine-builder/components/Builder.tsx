@@ -4,6 +4,8 @@
 //   pick a way → say it / type it → making → check your steps → when → ready
 // Also edits a saved routine (starts at "check your steps").
 
+import { ChallengeDone } from "@/features/rewards/components/ChallengeDone";
+import type { ChallengeStatus } from "@/features/rewards/challenges";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useReducer, useRef, useState } from "react";
@@ -101,6 +103,8 @@ export function Builder({ routineId, initial, forPerson }: Props) {
   /** Set when the steps came from Bridge, so "Want different steps?" can redo them. */
   const [draftLevel, setDraftLevel] = useState<SupportLevel | null>(null);
   const [savedId, setSavedId] = useState<string | null>(null);
+  /** Daily challenges that saving this routine finished */
+  const [challengesDone, setChallengesDone] = useState<ChallengeStatus[]>([]);
   const [confirmDelete, setConfirmDelete] = useState(false);
   const headingRef = useRef<HTMLHeadingElement>(null);
 
@@ -213,7 +217,10 @@ export function Builder({ routineId, initial, forPerson }: Props) {
     setBusy(true);
     setError("");
     try {
-      const response = await fetch(routineId ? `${api}/${routineId}` : api, {
+      // The time zone makes the new-routine challenge count the person's own day.
+      const tz = Intl.DateTimeFormat().resolvedOptions().timeZone || "UTC";
+      const url = routineId ? `${api}/${routineId}` : forPerson ? api : `${api}?tz=${encodeURIComponent(tz)}`;
+      const response = await fetch(url, {
         method: routineId ? "PATCH" : "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(result.value),
@@ -227,7 +234,8 @@ export function Builder({ routineId, initial, forPerson }: Props) {
         );
         return;
       }
-      const body = (await response.json()) as { routine: { id: string } };
+      const body = (await response.json()) as { routine: { id: string }; challenges?: ChallengeStatus[] };
+      setChallengesDone(body.challenges ?? []);
       // A guardian goes back to the person's routines; "Start it now" is for the person.
       if (editing || forPerson) {
         router.push(back);
@@ -766,6 +774,7 @@ export function Builder({ routineId, initial, forPerson }: Props) {
             <p className="m-0 text-[19px] text-ink2">
               {formatStepCount(cleaned().steps.length)} · {formatDays(state.days)} at {formatTime(state.start_time)}
             </p>
+            <ChallengeDone challenges={challengesDone} />
           </div>
         )}
       </div>

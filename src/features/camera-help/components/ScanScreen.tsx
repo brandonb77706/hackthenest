@@ -3,6 +3,8 @@
 // The Scan tab from the design: take a picture of a letter, bill, or form,
 // and Bridge says what it is and what to do, out loud and on screen.
 
+import { ChallengeDone } from "@/features/rewards/components/ChallengeDone";
+import type { ChallengeStatus } from "@/features/rewards/challenges";
 import { useEffect, useRef, useState } from "react";
 import { Icon } from "@/components/bridge/Icon";
 import { br } from "@/components/bridge/styles";
@@ -54,6 +56,8 @@ export function readAloudText(r: CameraHelpResponse): string {
 
 export function ScanScreen({ prepare = compressImage }: Props) {
   const [stage, setStage] = useState<Stage>({ kind: "idle" });
+  /** Daily challenges this scan finished */
+  const [challengesDone, setChallengesDone] = useState<ChallengeStatus[]>([]);
   const cameraInput = useRef<HTMLInputElement>(null);
   const photoInput = useRef<HTMLInputElement>(null);
   const headingRef = useRef<HTMLHeadingElement>(null);
@@ -86,15 +90,19 @@ export function ScanScreen({ prepare = compressImage }: Props) {
       return;
     }
     try {
-      const response = await fetch("/api/scan", {
+      // The time zone makes the scan challenge count the person's own day.
+      const tz = Intl.DateTimeFormat().resolvedOptions().timeZone || "UTC";
+      const response = await fetch(`/api/scan?tz=${encodeURIComponent(tz)}`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ image }),
       });
       if (!response.ok) throw new Error(String(response.status));
-      const { result } = (await response.json()) as {
+      const { result, challenges } = (await response.json()) as {
         result: CameraHelpResponse;
+        challenges?: ChallengeStatus[];
       };
+      setChallengesDone(challenges ?? []);
       setStage({ kind: "done", result });
       void play(`${result.what_it_is} ${result.summary}`);
     } catch {
@@ -214,6 +222,11 @@ export function ScanScreen({ prepare = compressImage }: Props) {
         </div>
       )}
 
+      {stage.kind === "done" && challengesDone.length > 0 && (
+        <div className="px-4 pt-3">
+          <ChallengeDone challenges={challengesDone} />
+        </div>
+      )}
       {stage.kind === "done" && (
         <Result
           result={stage.result}

@@ -5,6 +5,7 @@ vi.mock("next/server", () => ({ connection: vi.fn(async () => {}) }));
 vi.mock("@/lib/db", () => ({ getCurrentUserId: vi.fn(async () => "user-1") }));
 vi.mock("@/features/home/service", () => ({ getToday: vi.fn(), markStepDone: vi.fn() }));
 vi.mock("@/features/rewards/service", () => ({ awardStepDone: vi.fn(async () => []) }));
+vi.mock("@/features/rewards/challengeService", () => ({ claimChallenges: vi.fn(async () => []) }));
 vi.mock("@/features/rewards/streakService", () => ({ recordStreakDay: vi.fn(async () => ({ streak: 1, awards: [], unlocked: [] })) }));
 
 import * as service from "@/features/home/service";
@@ -43,7 +44,7 @@ describe("POST /api/routines/[id]/steps/[stepId]/done", () => {
     s.markStepDone.mockResolvedValue("c1");
     const res = await POST(post({}), ctx("r1", "s1"));
     expect(res.status).toBe(200);
-    expect(await res.json()).toEqual({ earned: 0, awards: [], finished_routine: false, streak: null, unlocked: [] });
+    expect(await res.json()).toEqual({ earned: 0, awards: [], finished_routine: false, streak: null, unlocked: [], challenges: [] });
     expect(s.markStepDone).toHaveBeenCalledWith("user-1", "r1", "s1", false);
   });
 
@@ -108,6 +109,7 @@ describe("POST /api/routines/[id]/steps/[stepId]/done", () => {
       finished_routine: true,
       streak: 3,
       unlocked: [],
+      challenges: [],
     });
     expect(st.recordStreakDay).toHaveBeenCalledWith("user-1", "America/Chicago", "c1");
   });

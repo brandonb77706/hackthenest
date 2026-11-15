@@ -1,5 +1,6 @@
 "use client";
 
+import { ChallengesCard } from "@/features/rewards/components/ChallengesCard";
 import Link from "next/link";
 import { CoinIcon, FlameIcon, Icon } from "@/components/bridge/Icon";
 import { NotificationBell } from "@/features/notifications/components/NotificationBell";
@@ -85,6 +86,8 @@ export function TodayScreen() {
             {canMakeRoutines ? "Nothing is planned for today. Make a routine to get started." : "Nothing is planned for today."}
           </p>
         )}
+
+        {today?.challenges && <ChallengesCard challenges={today.challenges} />}
 
         {canMakeRoutines && (
           <Link

@@ -13,6 +13,8 @@ import { br } from "@/components/bridge/styles";
 import { formatStepCount } from "@/features/routine-builder/format";
 import type { RoutineWithSteps } from "@/features/routine-builder/service";
 import type { StepDoneResponse } from "@/features/rewards/stepDone";
+import { ChallengeDone } from "@/features/rewards/components/ChallengeDone";
+import type { ChallengeStatus } from "@/features/rewards/challenges";
 import { play, stop } from "@/lib/voice/player";
 import { stepIcon } from "../stepIcon";
 
@@ -74,7 +76,7 @@ export function StepPlayer({ routineId, walkthrough, onExit, startStep = 1 }: Pr
   const totalEarned = useRef(0);
   const gotHelp = useRef(new Set<string>());
   /** Tokens, streak and Buddies earned on this run, from the server */
-  const [earned, setEarned] = useState({ tokens: 0, streak: null as number | null, unlocked: [] as string[] });
+  const [earned, setEarned] = useState({ tokens: 0, streak: null as number | null, unlocked: [] as string[], challenges: [] as ChallengeStatus[] });
 
   useEffect(() => {
     if (walkthrough) {
@@ -159,6 +161,7 @@ export function StepPlayer({ routineId, walkthrough, onExit, startStep = 1 }: Pr
             tokens: e.tokens + (result.earned ?? 0),
             streak: result.streak ?? e.streak,
             unlocked: [...e.unlocked, ...(result.unlocked ?? [])],
+            challenges: [...e.challenges, ...(result.challenges ?? [])],
           }));
           totalEarned.current += result.earned ?? 0;
         }
@@ -248,6 +251,7 @@ export function StepPlayer({ routineId, walkthrough, onExit, startStep = 1 }: Pr
             {earned.streak !== null && earned.streak > 1 && (
               <p className="m-0 rounded-2xl bg-go-soft px-4 py-3 text-[17px] font-bold">{earned.streak}-day streak. Keep it going!</p>
             )}
+            <ChallengeDone challenges={earned.challenges} />
             {earned.unlocked.map((name) => (
               <p key={name} role="status" className="m-0 rounded-2xl bg-primary-soft px-4 py-3 text-[17px] font-bold">
                 You unlocked {name}! Pick it on the Me tab.

@@ -2,6 +2,7 @@ import { markStepDone } from "@/features/home/service";
 import { awardStepDone } from "@/features/rewards/service";
 import type { StepDoneResponse } from "@/features/rewards/stepDone";
 import { recordStreakDay } from "@/features/rewards/streakService";
+import { claimChallenges } from "@/features/rewards/challengeService";
 import { getCurrentUserId } from "@/lib/db";
 
 
@@ -21,7 +22,7 @@ export async function POST(request: Request, ctx: RouteContext<"/api/routines/[i
   // routine is finished. The step is already saved, so a rewards problem is
   // logged and never blocks the person from moving on.
   const timeZone = new URL(request.url).searchParams.get("tz") || "UTC";
-  const result: StepDoneResponse = { earned: 0, awards: [], finished_routine: false, streak: null, unlocked: [] };
+  const result: StepDoneResponse = { earned: 0, awards: [], finished_routine: false, streak: null, unlocked: [], challenges: [] };
   try {
     result.awards = await awardStepDone(userId, { checkInId, routineId: id, stepId, usedHelp, timeZone });
     result.finished_routine = result.awards.some((a) => a.reason === "routine");
@@ -30,6 +31,9 @@ export async function POST(request: Request, ctx: RouteContext<"/api/routines/[i
       result.awards.push(...day.awards);
       result.streak = day.streak;
       result.unlocked = day.unlocked;
+      // Finishing a routine may finish "all of today's routines".
+      result.challenges = await claimChallenges(userId, timeZone);
+      result.awards.push(...result.challenges.map((c) => ({ amount: c.tokens, reason: "challenge" as const })));
     }
     result.earned = result.awards.reduce((sum, a) => sum + a.amount, 0);
   } catch (error) {

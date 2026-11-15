@@ -171,6 +171,7 @@ describe("StepPlayer", () => {
         finished_routine: true,
         streak: 7,
         unlocked: ["Turtle"],
+        challenges: [{ id: "all_routines", title: "Finish all of today's routines", tokens: 50, done: true, progress: "", percent: 100 }],
       },
     ];
     const user = userEvent.setup();
@@ -183,6 +184,7 @@ describe("StepPlayer", () => {
     expect(screen.getByText("+85")).toBeInTheDocument();
     expect(screen.getByText("7-day streak. Keep it going!")).toBeInTheDocument();
     expect(screen.getByText("You unlocked Turtle! Pick it on the Me tab.")).toBeInTheDocument();
+    expect(screen.getByText(/Challenge done!/).closest("p")).toHaveTextContent("Finish all of today's routines. +50 tokens");
     await waitFor(() => expect(play).toHaveBeenCalledWith("Morning routine done. Nice work. You earned 85 tokens."));
   });
 

@@ -169,3 +169,16 @@ A one-time code that links a user and a guardian. Either side makes one; the oth
 | expires_at | date | 24 hours after it's made |
 | used_at | date \| null | Set when it's entered |
 | used_by | id \| null | |
+
+## DailyChallenge
+
+A daily challenge the user finished. One per user, day and challenge (unique index), so each pays once a day. See `docs/rewards.md`.
+
+| Field | Type | Notes |
+| --- | --- | --- |
+| user_id | id | |
+| challenge | "all_routines" \| "scans" \| "new_routine" | |
+| date | "YYYY-MM-DD" | The user's own day |
+| tokens | number | What it paid (also a `challenge` TokenTransaction) |
+| completed_at | date | |
+

@@ -1,3 +1,4 @@
+import type { ChallengeStatus } from "./challenges";
 import type { TokenAward } from "./earning";
 
 /** What POST /api/routines/:id/steps/:stepId/done answers, so the step player can show it. */
@@ -11,4 +12,6 @@ export interface StepDoneResponse {
   streak: number | null;
   /** Streak Buddies unlocked by this tap */
   unlocked: string[];
+  /** Daily challenges this tap completed (their tokens are in earned) */
+  challenges: ChallengeStatus[];
 }

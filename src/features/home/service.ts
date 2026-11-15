@@ -15,6 +15,8 @@ import { getEditRules } from "@/features/guardians/service";
 import type { EditRules } from "@/features/guardians/editRules";
 import { settingsOf, type MeSettings } from "@/features/me/service";
 import { liveStreak } from "@/features/rewards/streak";
+import { getChallenges } from "@/features/rewards/challengeService";
+import type { ChallengeStatus } from "@/features/rewards/challenges";
 import { localNow } from "@/lib/time";
 import type { Avatar, CheckIn, ID, Routine, Step, UserProfile } from "@/lib/types";
 import { summarizeDay, type TodayRoutine } from "./today";
@@ -28,11 +30,13 @@ export interface TodayResponse {
   settings: MeSettings;
   /** Whether the user can make and change routines (a guardian can turn it off). Missing means allowed */
   edit?: EditRules;
+  /** Today's challenges with progress */
+  challenges?: ChallengeStatus[];
 }
 
 export async function getToday(userId: ID, timeZone: string, at = new Date()): Promise<TodayResponse> {
   await connectDB();
-  const [profile, tokenSum, routineDocs, stepDocs, recent, edit] = await Promise.all([
+  const [profile, tokenSum, routineDocs, stepDocs, recent, edit, challenges] = await Promise.all([
     UserProfileModel.findOne({ user_id: userId }),
     TokenTransactionModel.aggregate<{ total: number }>([
       { $match: { user_id: new mongoose.Types.ObjectId(userId) } },
@@ -43,6 +47,7 @@ export async function getToday(userId: ID, timeZone: string, at = new Date()): P
     // A day and a half covers "today" in any time zone; filtered to the local date below.
     CheckInModel.find({ user_id: userId, status: "done", time: { $gte: new Date(at.getTime() - 36 * 3600_000) } }),
     getEditRules(userId),
+    getChallenges(userId, timeZone, at),
   ]);
 
   const stepIds = new Map<string, string[]>();
@@ -68,6 +73,7 @@ export async function getToday(userId: ID, timeZone: string, at = new Date()): P
     settings: settingsOf(profileRecord, buddyDoc ? toRecord<Avatar>(buddyDoc).name : null),
     tokens: tokenSum[0]?.total ?? 0,
     edit,
+    challenges,
     routines: summarizeDay({
       routines: routineDocs.map((doc) => {
         const r = toRecord<Routine>(doc);

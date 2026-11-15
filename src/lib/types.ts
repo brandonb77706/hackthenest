@@ -165,6 +165,19 @@ export interface SetupCode {
   used_by: ID | null;
 }
 
+export const CHALLENGE_IDS = ["all_routines", "scans", "new_routine"] as const;
+export type ChallengeId = (typeof CHALLENGE_IDS)[number];
+
+/** A daily challenge the user finished. One per challenge per day, so it pays once. */
+export interface DailyChallenge extends Owned {
+  id: ID;
+  challenge: ChallengeId;
+  /** "YYYY-MM-DD" in the user's day */
+  date: string;
+  tokens: number;
+  completed_at: string;
+}
+
 export const REMINDER_SOURCES = ["routine", "camera"] as const;
 export type ReminderSource = (typeof REMINDER_SOURCES)[number];
 
@@ -211,7 +224,7 @@ export interface UserAvatar extends Owned {
   unlocked_at: string;
 }
 
-export const TOKEN_REASONS = ["step", "routine", "camera", "first_routine", "streak", "purchase"] as const;
+export const TOKEN_REASONS = ["step", "routine", "camera", "first_routine", "streak", "challenge", "purchase"] as const;
 export type TokenReason = (typeof TOKEN_REASONS)[number];
 
 /** Only server code writes these. Balance = sum of the user's transactions. */

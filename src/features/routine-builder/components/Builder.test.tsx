@@ -261,8 +261,8 @@ describe("Builder: when, saving, and ready", () => {
 
     expect(await screen.findByRole("heading", { name: "Take medicine is ready" })).toBeInTheDocument();
     expect(screen.getByText("3 steps · Monday, Tuesday, Wednesday, Thursday, Friday, Saturday at 9:00 PM")).toBeInTheDocument();
+    expect(call(0).url).toMatch(/^\/api\/routines\?tz=/);
     expect(call(0)).toMatchObject({
-      url: "/api/routines",
       method: "POST",
       body: { title: "Take medicine", days: ["mon", "tue", "wed", "thu", "fri", "sat"], start_time: "21:00", tone: "orange", remind: false },
     });

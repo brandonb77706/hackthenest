@@ -59,7 +59,7 @@ describe("ScanScreen", () => {
     expect(screen.getAllByRole("listitem").map((li) => li.textContent)).toEqual(bill.actions);
 
     const [url, init] = fetchMock.mock.calls[0] as [string, RequestInit];
-    expect(url).toBe("/api/scan");
+    expect(url).toMatch(/^\/api\/scan\?tz=/);
     expect(JSON.parse(init.body as string)).toEqual({ image: { data: btoa("small photo"), mime: "image/jpeg" } });
     await waitFor(() => expect(play).toHaveBeenCalledWith(`${bill.what_it_is} ${bill.summary}`));
   });

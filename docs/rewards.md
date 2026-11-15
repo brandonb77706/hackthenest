@@ -32,6 +32,16 @@ Code: `src/features/rewards/` (`earning.ts` amounts, `stepAwards.ts` the rules a
 
 **Streaks.** Finishing the first routine of the day moves the streak (`streak.ts`, `streakService.ts`): one more day after yesterday, a saved freeze covers one missed day, otherwise it starts again at 1. Reaching 3, 7, 14 or 30 days pays the bonus once, and a streak Buddy (Turtle at 7, Bunny at 14) is given when its streak is reached. A broken streak never takes anything away. The step player shows the tokens earned on the results screen; the Done route answers with them.
 
+**Daily challenges.** Three a day, each paying once (`challenges.ts`, `challengeService.ts`), more than a routine:
+
+| Challenge | Done when | Tokens |
+| --- | --- | --- |
+| Finish all of today's routines | Every routine planned today is finished today | 50 |
+| Scan 3 letters or bills | 3 scans today | 40 |
+| Make a new routine | The user makes one today (not a guardian). Hidden when a guardian manages routines | 30 |
+
+The server checks after a routine is finished, a scan, and a new routine. A `DailyChallenge` row per user, day and challenge (unique) makes each pay once, even with taps at the same moment. A scan saves only that it happened (a `camera` HelpRequest with no text), never the photo or its contents. Today shows the challenges with progress.
+
 **Buying.** Shop Buddies are bought on Me (`shop.ts`, `shopService.ts`). One transaction checks the balance, writes the negative `purchase` transaction and the UserAvatar, and puts the Buddy on.
 
 ## Avatars
