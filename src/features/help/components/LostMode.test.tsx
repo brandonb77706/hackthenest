@@ -15,6 +15,7 @@ const sam: TrustedContact = {
   can_see_routines: false,
   can_get_lost_alerts: true,
   can_get_stuck_alerts: false,
+  added_by: null,
 };
 const found: LocationResult = { ok: true, coords: { latitude: 42.3314, longitude: -83.0458 } };
 

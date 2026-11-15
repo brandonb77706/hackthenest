@@ -1,7 +1,7 @@
 import { Schema } from "mongoose";
 import { ROUTINE_TONES, WEEKDAYS, type Routine } from "@/lib/types";
 import { ownedPlugin } from "../owned";
-import { defineModel, ownerField, schemaOptions, TIME_OF_DAY, type Fields } from "../schema";
+import { defineModel, ObjectId, ownerField, schemaOptions, TIME_OF_DAY, type Fields } from "../schema";
 
 const fields = {
   user_id: ownerField,
@@ -13,6 +13,8 @@ const fields = {
   active: { type: Boolean, default: true },
   tone: { type: String, enum: ROUTINE_TONES, default: "teal" },
   remind: { type: Boolean, default: true },
+  // A guardian who added it for the user. They can change it even if routines aren't shared.
+  added_by: { type: ObjectId, default: null },
 } satisfies Fields<Routine>;
 
 const schema = new Schema(fields, schemaOptions);

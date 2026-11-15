@@ -1,6 +1,16 @@
-import { addContactFor } from "@/features/guardians/support";
+import { connection } from "next/server";
+import { addContactFor, listContactsFor } from "@/features/guardians/support";
 import { checkContact, readContactInput } from "@/features/help/contactInput";
 import { requireUser } from "@/lib/auth/session";
+
+/** The contacts this guardian added for the person. */
+export async function GET(_request: Request, ctx: RouteContext<"/api/guardian/people/[userId]/contacts">) {
+  await connection();
+  const { userId } = await ctx.params;
+  const contacts = await listContactsFor(await requireUser(), userId);
+  if (!contacts) return Response.json({ error: "Not linked" }, { status: 404 });
+  return Response.json({ contacts }, { headers: { "Cache-Control": "no-store" } });
+}
 
 /** A guardian adds a trusted contact for someone. Sharing starts off; the person turns it on. */
 export async function POST(request: Request, ctx: RouteContext<"/api/guardian/people/[userId]/contacts">) {

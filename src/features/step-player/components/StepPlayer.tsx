@@ -35,6 +35,7 @@ function walkthroughRoutine(w: Walkthrough): RoutineWithSteps {
   return {
     id: "walkthrough",
     user_id: "",
+    added_by: null,
     title: w.title,
     goal: "",
     days: [],

@@ -51,6 +51,7 @@ const routines = docs.map((d) => toRecord<Routine>(d));
 | active | boolean | |
 | tone | enum: teal, sea, orange, gold | Color on screen (blue, green, orange, yellow). Default teal |
 | remind | boolean | Show check-ins for this routine. Default true |
+| added_by | id \| null | A guardian who added this routine for the user. Null if the user did |
 
 ## Step
 | Field | Type | Notes |
@@ -87,6 +88,7 @@ const routines = docs.map((d) => toRecord<Routine>(d));
 | method | enum: sms, email, telegram | |
 | contact | string | |
 | relation | string | Who they are, like "Your brother". Shown under their name |
+| added_by | id \| null | A guardian who added this contact for the user. Null if the user did |
 | can_see_routines | boolean | Default false |
 | can_get_lost_alerts | boolean | Default false |
 | can_get_stuck_alerts | boolean | Default false |

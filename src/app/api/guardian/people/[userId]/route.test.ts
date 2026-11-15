@@ -3,10 +3,21 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 
 vi.mock("@/lib/auth/session", () => ({ requireUser: vi.fn(async () => ({ id: "g1", role: "guardian" })) }));
 vi.mock("next/server", () => ({ connection: async () => {} }));
-vi.mock("@/features/guardians/support", () => ({ getPersonDay: vi.fn(), addRoutineFor: vi.fn(), addContactFor: vi.fn() }));
+vi.mock("@/features/guardians/support", () => ({
+  getPersonDay: vi.fn(),
+  addRoutineFor: vi.fn(),
+  addContactFor: vi.fn(),
+  listContactsFor: vi.fn(),
+  updateRoutineFor: vi.fn(),
+  deleteRoutineFor: vi.fn(),
+  updateContactFor: vi.fn(),
+  deleteContactFor: vi.fn(),
+}));
 
 import * as support from "@/features/guardians/support";
-import { POST as addContact } from "./contacts/route";
+import { DELETE as deleteContact, PATCH as patchContact } from "./contacts/[contactId]/route";
+import { GET as listContacts, POST as addContact } from "./contacts/route";
+import { DELETE as deleteRoutine, PATCH as patchRoutine } from "./routines/[routineId]/route";
 import { GET as day } from "./day/route";
 import { POST as addRoutine } from "./routines/route";
 
@@ -37,5 +48,33 @@ describe("guardian routes", () => {
     expect((await addContact(post({ name: "", method: "sms", contact: "5" }), ctx)).status).toBe(400);
     s.addContactFor.mockResolvedValue(null);
     expect((await addContact(post({ name: "Maria", method: "sms", contact: "555 010 0100" }), ctx)).status).toBe(404);
+  });
+});
+
+describe("guardian edit and delete routes", () => {
+  const rctx = { params: Promise.resolve({ userId: "u1", routineId: "r1" }) };
+  const cctx = { params: Promise.resolve({ userId: "u1", contactId: "c1" }) };
+  const routine = { title: "Laundry", days: ["mon"], start_time: "17:00", steps: [{ text: "Sort", minutes: 5 }] };
+  const contact = { name: "Maria", method: "sms", contact: "555 010 0100" };
+
+  it("PATCH and DELETE a routine, 404 when the guardian can't change it", async () => {
+    s.updateRoutineFor.mockResolvedValueOnce(true).mockResolvedValueOnce(false);
+    expect((await patchRoutine(new Request("http://test", { method: "PATCH", body: JSON.stringify(routine) }), rctx)).status).toBe(200);
+    expect((await patchRoutine(new Request("http://test", { method: "PATCH", body: JSON.stringify(routine) }), rctx)).status).toBe(404);
+    expect((await patchRoutine(new Request("http://test", { method: "PATCH", body: JSON.stringify({ ...routine, title: "" }) }), rctx)).status).toBe(400);
+    s.deleteRoutineFor.mockResolvedValueOnce(true).mockResolvedValueOnce(false);
+    expect((await deleteRoutine(new Request("http://test"), rctx)).status).toBe(204);
+    expect((await deleteRoutine(new Request("http://test"), rctx)).status).toBe(404);
+  });
+
+  it("GET, PATCH and DELETE contacts the guardian added", async () => {
+    s.listContactsFor.mockResolvedValueOnce([]).mockResolvedValueOnce(null);
+    expect(await (await listContacts(new Request("http://test"), ctx)).json()).toEqual({ contacts: [] });
+    expect((await listContacts(new Request("http://test"), ctx)).status).toBe(404);
+    s.updateContactFor.mockResolvedValueOnce(true).mockResolvedValueOnce(false);
+    expect((await patchContact(new Request("http://test", { method: "PATCH", body: JSON.stringify(contact) }), cctx)).status).toBe(200);
+    expect((await patchContact(new Request("http://test", { method: "PATCH", body: JSON.stringify(contact) }), cctx)).status).toBe(404);
+    s.deleteContactFor.mockResolvedValueOnce(true);
+    expect((await deleteContact(new Request("http://test"), cctx)).status).toBe(204);
   });
 });

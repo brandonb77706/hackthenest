@@ -1,7 +1,7 @@
 import { Schema } from "mongoose";
 import { CONTACT_METHODS, DEFAULT_CONTACT_PERMISSIONS, type TrustedContact } from "@/lib/types";
 import { ownedPlugin } from "../owned";
-import { defineModel, ownerField, schemaOptions, type Fields } from "../schema";
+import { defineModel, ObjectId, ownerField, schemaOptions, type Fields } from "../schema";
 
 const fields = {
   user_id: ownerField,
@@ -13,6 +13,8 @@ const fields = {
   can_see_routines: { type: Boolean, default: DEFAULT_CONTACT_PERMISSIONS.can_see_routines },
   can_get_lost_alerts: { type: Boolean, default: DEFAULT_CONTACT_PERMISSIONS.can_get_lost_alerts },
   can_get_stuck_alerts: { type: Boolean, default: DEFAULT_CONTACT_PERMISSIONS.can_get_stuck_alerts },
+  // A guardian who added them for the user. Only they can see and change this contact from the guardian view.
+  added_by: { type: ObjectId, default: null },
 } satisfies Fields<TrustedContact>;
 
 const schema = new Schema(fields, schemaOptions);

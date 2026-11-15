@@ -61,6 +61,8 @@ export interface Routine extends Owned {
   tone: RoutineTone;
   /** Show check-ins for this routine */
   remind: boolean;
+  /** A guardian who added it for the user, or null if the user made it */
+  added_by: ID | null;
 }
 
 export interface Step extends Owned {
@@ -125,6 +127,8 @@ export interface TrustedContact extends Owned, TrustedContactPermissions {
   contact: string;
   /** Who they are to the user, like "Your brother". Shown under their name */
   relation: string;
+  /** A guardian who added them for the user, or null if the user did */
+  added_by: ID | null;
 }
 
 /**

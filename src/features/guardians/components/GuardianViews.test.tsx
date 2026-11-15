@@ -1,7 +1,7 @@
 import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { GuardianContacts } from "./GuardianContacts";
-import { GuardianRoutines, stepsFromText } from "./GuardianRoutines";
+import { GuardianRoutines } from "./GuardianRoutines";
 import { GuardianToday } from "./GuardianToday";
 
 const json = (body: unknown, status = 200) => new Response(JSON.stringify(body), { status });
@@ -51,66 +51,77 @@ describe("GuardianToday", () => {
 });
 
 describe("GuardianRoutines", () => {
-  it("turns lines into steps", () => {
-    expect(stepsFromText(" Sort \n\nWash\n")).toEqual(["Sort", "Wash"]);
-  });
-
-  it("lists shared routines with their status", async () => {
-    fetchMock.mockResolvedValue(json(shared));
+  it("lists shared routines with their status, an Edit link, and New", async () => {
+    fetchMock.mockResolvedValue(json({ ...shared, added: [] }));
     render(<GuardianRoutines personId="u1" name="Jordan" />);
     expect(await screen.findByText("Pick up prescription")).toBeInTheDocument();
     expect(screen.getByText("Done today")).toBeInTheDocument();
-    expect(screen.getByText("Up next")).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "Edit Pick up prescription" })).toHaveAttribute("href", "/guardian/u1/edit/r2");
+    expect(screen.getByRole("link", { name: "Make a routine for Jordan" })).toHaveAttribute("href", "/guardian/u1/new");
   });
 
-  it("adds a routine even when routines aren't shared", async () => {
-    fetchMock.mockResolvedValueOnce(json(hidden)).mockResolvedValueOnce(json({ id: "r9" }, 201)).mockResolvedValue(json(hidden));
+  it("shows only the routines the guardian added when routines aren't shared", async () => {
+    fetchMock.mockResolvedValue(json({ ...hidden, added: [routines[2]] }));
     render(<GuardianRoutines personId="u1" name="Jordan" />);
-    expect(await screen.findByText(/hasn't shared their routines/)).toBeInTheDocument();
-    fireEvent.click(screen.getByRole("button", { name: "+ New" }));
-    fireEvent.change(screen.getByLabelText("Routine name"), { target: { value: "Laundry day" } });
-    fireEvent.change(screen.getByLabelText("Time"), { target: { value: "17:00" } });
-    fireEvent.change(screen.getByLabelText("Steps, one per line"), { target: { value: "Sort clothes\nStart the washer" } });
-    fireEvent.click(screen.getByRole("button", { name: "Add to Jordan's routines" }));
-    expect(await screen.findByText(/Added Laundry day to Jordan's routines/)).toBeInTheDocument();
-    const [url, init] = fetchMock.mock.calls[1];
-    expect(url).toBe("/api/guardian/people/u1/routines");
-    expect(JSON.parse(init.body)).toMatchObject({
-      title: "Laundry day",
-      start_time: "17:00",
-      steps: [
-        { text: "Sort clothes", minutes: 5 },
-        { text: "Start the washer", minutes: 5 },
-      ],
-    });
-  });
-
-  it("asks for steps before sending", async () => {
-    fetchMock.mockResolvedValue(json(hidden));
-    render(<GuardianRoutines personId="u1" name="Jordan" />);
-    fireEvent.click(await screen.findByRole("button", { name: "+ New" }));
-    fireEvent.change(screen.getByLabelText("Routine name"), { target: { value: "Laundry" } });
-    fireEvent.click(screen.getByRole("button", { name: "Add to Jordan's routines" }));
-    expect(screen.getByRole("alert")).toHaveTextContent("Add at least one step");
-    expect(fetchMock).toHaveBeenCalledTimes(1);
+    expect(await screen.findByText(/You can see and change only the ones you added/)).toBeInTheDocument();
+    expect(screen.getByText("Evening routine")).toBeInTheDocument();
+    expect(screen.queryByText("Morning routine")).toBeNull();
+    expect(screen.queryByText("Later today")).toBeNull();
   });
 });
 
 describe("GuardianContacts", () => {
+  const maria = {
+    id: "c1",
+    user_id: "u1",
+    name: "Aunt Maria",
+    method: "sms",
+    contact: "5555550100",
+    relation: "Aunt",
+    can_see_routines: false,
+    can_get_lost_alerts: true,
+    can_get_stuck_alerts: false,
+    added_by: "g1",
+  };
+
   it("adds a contact and says sharing starts off", async () => {
-    fetchMock.mockResolvedValue(json({ id: "c1" }, 201));
+    fetchMock.mockResolvedValueOnce(json({ contacts: [] })).mockResolvedValueOnce(json({ id: "c1" }, 201)).mockResolvedValue(json({ contacts: [maria] }));
     render(<GuardianContacts personId="u1" name="Jordan" />);
     fireEvent.change(screen.getByLabelText("Name"), { target: { value: "Aunt Maria" } });
     fireEvent.change(screen.getByLabelText("How they know Jordan"), { target: { value: "Aunt" } });
     fireEvent.change(screen.getByLabelText("Phone"), { target: { value: "(555) 555-0100" } });
     fireEvent.click(screen.getByRole("button", { name: "+ Add contact" }));
-    expect(await screen.findByText("Added: Aunt Maria")).toBeInTheDocument();
-    expect(screen.getByText(/Everything starts off/)).toBeInTheDocument();
-    expect(JSON.parse(fetchMock.mock.calls[0][1].body)).toEqual({ name: "Aunt Maria", relation: "Aunt", contact: "(555) 555-0100", method: "sms" });
+    expect(await screen.findByText(/Added Aunt Maria. Jordan chooses what they can see/)).toBeInTheDocument();
+    expect(await screen.findByRole("button", { name: "Change Aunt Maria" })).toBeInTheDocument();
+    expect(JSON.parse(fetchMock.mock.calls[1][1].body)).toEqual({ name: "Aunt Maria", relation: "Aunt", contact: "(555) 555-0100", method: "sms" });
+  });
+
+  it("changes a contact the guardian added", async () => {
+    fetchMock.mockResolvedValueOnce(json({ contacts: [maria] })).mockResolvedValueOnce(json({ contact: { id: "c1" } })).mockResolvedValue(json({ contacts: [maria] }));
+    render(<GuardianContacts personId="u1" name="Jordan" />);
+    fireEvent.click(await screen.findByRole("button", { name: "Change Aunt Maria" }));
+    expect(screen.getByLabelText("Phone")).toHaveValue("5555550100");
+    fireEvent.change(screen.getByLabelText("Phone"), { target: { value: "555 555 0199" } });
+    fireEvent.click(screen.getByRole("button", { name: "Save changes" }));
+    expect(await screen.findByText("Saved Aunt Maria.")).toBeInTheDocument();
+    const [url, init] = fetchMock.mock.calls[1];
+    expect(url).toBe("/api/guardian/people/u1/contacts/c1");
+    expect(init.method).toBe("PATCH");
+  });
+
+  it("asks before removing a contact", async () => {
+    fetchMock.mockResolvedValueOnce(json({ contacts: [maria] })).mockResolvedValueOnce(new Response(null, { status: 204 })).mockResolvedValue(json({ contacts: [] }));
+    render(<GuardianContacts personId="u1" name="Jordan" />);
+    fireEvent.click(await screen.findByRole("button", { name: "Remove Aunt Maria" }));
+    expect(screen.getByRole("dialog", { name: "Remove Aunt Maria?" })).toBeInTheDocument();
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+    fireEvent.click(screen.getByRole("button", { name: "Remove" }));
+    expect(await screen.findByText("Removed Aunt Maria.")).toBeInTheDocument();
+    expect(fetchMock.mock.calls[1]).toEqual(["/api/guardian/people/u1/contacts/c1", { method: "DELETE" }]);
   });
 
   it("shows the field errors from the server", async () => {
-    fetchMock.mockResolvedValue(json({ errors: { contact: "Add their phone number." } }, 400));
+    fetchMock.mockResolvedValueOnce(json({ contacts: [] })).mockResolvedValue(json({ errors: { contact: "Add their phone number." } }, 400));
     render(<GuardianContacts personId="u1" name="Jordan" />);
     fireEvent.change(screen.getByLabelText("Name"), { target: { value: "Maria" } });
     fireEvent.click(screen.getByRole("button", { name: "+ Add contact" }));

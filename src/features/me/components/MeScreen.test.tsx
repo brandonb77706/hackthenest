@@ -20,6 +20,7 @@ const sam: TrustedContact = {
   can_see_routines: false,
   can_get_lost_alerts: false,
   can_get_stuck_alerts: false,
+  added_by: null,
 };
 const catalog = [
   { id: "fox", name: "Fox", unlock_type: "starter" as const, price: null, streak_required: null },

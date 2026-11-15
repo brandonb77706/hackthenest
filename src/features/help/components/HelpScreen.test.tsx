@@ -18,6 +18,7 @@ const sam: TrustedContact = {
   can_see_routines: false,
   can_get_lost_alerts: true,
   can_get_stuck_alerts: false,
+  added_by: null,
 };
 const phrases: SpeakPhrase[] = [
   { id: "p1", user_id: "u1", text: "I have autism. I need a moment to answer.", audio_url: null, order: 0 },

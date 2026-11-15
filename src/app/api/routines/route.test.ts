@@ -33,6 +33,7 @@ const saved: RoutineWithSteps = {
   active: true,
   tone: "teal",
   remind: true,
+  added_by: null,
   ...body,
   days: ["mon"],
   steps: [],
