@@ -7,7 +7,8 @@ export async function GET(request: Request) {
   const userId = await getCurrentUserId();
   await connectDB();
   const now = new Date();
-  const routines = await RoutineModel.find({ user_id: userId, active: true }).select({ _id: 1, title: 1, days: 1, start_time: 1, active: 1 }).lean();
+  // Older routines may not have the field; the model defaults reminders to on.
+  const routines = await RoutineModel.find({ user_id: userId, active: true, remind: { $ne: false } }).select({ _id: 1, title: 1, days: 1, start_time: 1, active: 1 }).lean();
   const checkIns = await CheckInModel.find({ user_id: userId, time: { $gte: new Date(now.getTime() - 36 * 60 * 60 * 1000), $lte: now } }).select({ routine_id: 1, time: 1 }).lean();
   const checkedIn = checkedInToday(checkIns.map((item) => ({ routine_id: String(item.routine_id), time: new Date(item.time).toISOString() })), easternDate(now));
   const delivered = new URL(request.url).searchParams.get("delivered")?.split(",").filter((id) => /^[a-f\d]{24}:\d{4}-\d{2}-\d{2}:\d{4}:(before|late)$/.test(id)).slice(0, 200) ?? [];

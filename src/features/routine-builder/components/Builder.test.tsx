@@ -45,6 +45,7 @@ describe("Builder: choosing how to start", () => {
     for (const name of ["Take medicine", "Morning", "Get ready for work", "Bedtime"]) {
       expect(screen.getByRole("button", { name })).toBeInTheDocument();
     }
+    expect(screen.getByRole("link", { name: "Grocery shopping" })).toHaveAttribute("href", "/groceries");
     expect(screen.getByRole("progressbar")).toHaveAccessibleName("Making your routine, part 1 of 3");
   });
 

@@ -1,0 +1,11 @@
+body { margin: 0; font: 18px/1.5 system-ui, sans-serif; color: #18181b; background: white; }
+main { max-width: 36rem; padding: 2rem 1rem; margin: auto; }
+main > * { margin-block: 1.5rem; }
+h1 { font-size: 2rem; } h2 { font-size: 1.5rem; }
+label { display: block; font-weight: 600; }
+input, select { box-sizing: border-box; width: 100%; min-height: 48px; padding: 0.5rem; font: inherit; border: 2px solid #71717a; border-radius: 12px; }
+button { min-height: 48px; padding: 0.5rem 1.25rem; font: inherit; font-weight: 600; background: white; color: #18181b; border: 2px solid #27272a; border-radius: 12px; cursor: pointer; }
+button:disabled { opacity: .6; cursor: default; }
+button:focus-visible, input:focus-visible, select:focus-visible { outline: 4px solid #2563eb; outline-offset: 2px; }
+form button { display: block; width: 100%; margin-top: .75rem; background: #1d4ed8; color: white; border-color: #1d4ed8; }
+ul { list-style: none; padding: 0; } li { border: 2px solid #d4d4d8; border-radius: 16px; padding: 1rem; margin-block: .75rem; }

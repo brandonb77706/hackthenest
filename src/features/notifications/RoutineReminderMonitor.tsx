@@ -1,6 +1,8 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { Icon } from "@/components/bridge/Icon";
+import { br } from "@/components/bridge/styles";
 import { REMINDER_POLL_MS, type RoutineReminder } from "./routineReminders";
 
 const STORAGE_KEY = "bridge:routine-reminders:delivered:v1";
@@ -36,14 +38,17 @@ export function RoutineReminderMonitor() {
     return () => { stopped = true; window.clearInterval(timer); };
   }, []);
 
-  if (!reminder) return <p role="status" className="text-lg">Routine reminders check every 30 seconds while this page is open. Time zone: Eastern.</p>;
+  if (!reminder) return null;
   const message = reminder.stage === "before"
     ? `${reminder.title} starts in 10 minutes.`
     : `${reminder.title} was scheduled to start 10 minutes ago. Have you started?`;
   return (
-    <section aria-label="Routine reminder" style={{ border: "2px solid #163e85", padding: 16, borderRadius: 12, background: "white", color: "#172033" }}>
-      <p role="status" aria-live="polite" style={{ fontSize: 18 }}>{message}</p>
-      <button type="button" onClick={() => setReminder(null)} style={{ minHeight: 48, padding: 12, border: "2px solid", font: "inherit" }}>Dismiss reminder</button>
+    <section aria-label="Routine reminder" className="overflow-hidden rounded-[20px] border-2 border-cta-edge bg-surface text-ink shadow-[0_5px_0_var(--br-cta-edge)]">
+      <div className="flex items-center gap-3 bg-cta px-4 py-3 font-display text-[19px] font-bold text-cta-ink"><Icon name="clock" size={24} /> Routine reminder</div>
+      <div className="p-4">
+        <p role="status" aria-live="polite" className="mb-3 mt-0 text-[18px] leading-snug">{message}</p>
+        <button type="button" onClick={() => setReminder(null)} className={`${br.ghost} min-h-12 rounded-[14px] px-4 text-[17px]`}>Dismiss reminder</button>
+      </div>
     </section>
   );
 }

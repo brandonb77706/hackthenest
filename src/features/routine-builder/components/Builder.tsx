@@ -311,6 +311,9 @@ export function Builder({ routineId, initial }: Props) {
             ))}
             <h2 className={`${br.h2} mt-1.5`}>Quick start</h2>
             <div className="grid grid-cols-2 gap-2.5">
+              <Link href="/groceries" className={`${br.ghost} flex min-h-14 items-center justify-center rounded-2xl px-2.5 py-1.5 text-center text-[16px] leading-tight no-underline`}>
+                Grocery shopping
+              </Link>
               {TEMPLATES.map((t) => (
                 <button
                   key={t.id}
