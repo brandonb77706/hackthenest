@@ -6,6 +6,8 @@
 //   "elevenlabs"  ElevenLabs, with the browser voice as backup.
 //   not set       ElevenLabs, everywhere (npm run dev too).
 
+import { MAX_SPEAK_CHARS } from "./voices";
+
 export type PlayerStatus = "idle" | "loading" | "playing";
 
 export interface PlayerState {
@@ -125,7 +127,8 @@ async function fetchAudioUrl(text: string): Promise<string | null> {
   }
 }
 
-function speakWithBrowser(text: string, id: number): void {
+/** `shownText` is what the player reports as playing (the whole text, when this reads only the rest). */
+function speakWithBrowser(text: string, id: number, shownText = text): void {
   if (typeof window === "undefined" || !("speechSynthesis" in window)) {
     setState({ status: "idle", text: null });
     return;
@@ -140,7 +143,7 @@ function speakWithBrowser(text: string, id: number): void {
   const done = () => {
     if (id === playId) setState({ status: "idle", text: null });
   };
-  setState({ status: "playing", text });
+  setState({ status: "playing", text: shownText });
   // Chrome sometimes leaves speech paused; resume before queueing.
   synth.resume?.();
   pieces.forEach((piece, i) => {
@@ -161,7 +164,44 @@ function speakWithBrowser(text: string, id: number): void {
   });
 }
 
-/** Reads the text aloud. Stops anything already playing. */
+/**
+ * Plays one audio file to the end. False if the browser blocked it or couldn't play it.
+ * `last`: the final piece goes idle the moment it ends, so buttons switch back right away.
+ */
+function playUrl(url: string, id: number, last: boolean): Promise<boolean> {
+  return new Promise((resolve) => {
+    const element = new Audio(url);
+    audio = element;
+    let settled = false;
+    const finish = (ok: boolean) => {
+      if (!settled) {
+        settled = true;
+        resolve(ok);
+      }
+    };
+    element.onended = () => {
+      if (last && id === playId) {
+        audio = null;
+        setState({ status: "idle", text: null });
+      }
+      finish(true);
+    };
+    // stop() bumps playId, then pauses: end the queue. Other pauses (a phone call,
+    // the lock screen's pause button) just wait, and the clip can resume.
+    element.onpause = () => {
+      if (id !== playId) finish(true);
+    };
+    element.onerror = () => finish(false);
+    element.play().catch(() => finish(false));
+  });
+}
+
+/**
+ * Reads the text aloud. Stops anything already playing.
+ * ElevenLabs reads at most MAX_SPEAK_CHARS per request, so longer text (like a
+ * scanned letter) plays as a queue of sentence-sized pieces in the same voice.
+ * The next piece loads while one plays, so there's no long pause between them.
+ */
 export async function play(text: string): Promise<void> {
   stop();
   const id = playId;
@@ -171,32 +211,25 @@ export async function play(text: string): Promise<void> {
     return;
   }
 
+  const pieces = splitForSpeech(text, MAX_SPEAK_CHARS);
+  if (pieces.length === 0) return;
+
   setState({ status: "loading", text });
-  const url = await fetchAudioUrl(text);
-  if (id !== playId) return;
+  let next = fetchAudioUrl(pieces[0]);
+  for (let i = 0; i < pieces.length; i++) {
+    const url = await next;
+    if (id !== playId) return;
+    // ElevenLabs didn't answer, or the browser can't play its file: read the rest with the browser's voice.
+    const rest = () => speakWithBrowser(pieces.slice(i).join(" "), id, text);
+    if (!url) return rest();
 
-  if (!url) {
-    speakWithBrowser(text, id);
-    return;
-  }
-
-  const element = new Audio(url);
-  audio = element;
-  const done = () => {
-    if (id === playId) {
-      audio = null;
-      setState({ status: "idle", text: null });
-    }
-  };
-  element.onended = done;
-  try {
+    if (i + 1 < pieces.length) next = fetchAudioUrl(pieces[i + 1]);
     setState({ status: "playing", text });
-    await element.play();
-  } catch {
-    // The browser blocked or couldn't play the file. Use its own voice instead.
-    if (id === playId) {
+    const ok = await playUrl(url, id, i === pieces.length - 1);
+    if (id !== playId) return;
+    if (!ok) {
       audio = null;
-      speakWithBrowser(text, id);
+      return rest();
     }
   }
 }
