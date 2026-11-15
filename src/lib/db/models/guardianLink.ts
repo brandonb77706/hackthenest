@@ -12,6 +12,9 @@ const fields = {
   can_see_routines: { type: Boolean, default: DEFAULT_CONTACT_PERMISSIONS.can_see_routines },
   can_get_lost_alerts: { type: Boolean, default: DEFAULT_CONTACT_PERMISSIONS.can_get_lost_alerts },
   can_get_stuck_alerts: { type: Boolean, default: DEFAULT_CONTACT_PERMISSIONS.can_get_stuck_alerts },
+  // What the user can change themselves. Only the guardian sets these; on by default.
+  user_can_edit_routines: { type: Boolean, default: true },
+  user_can_edit_contacts: { type: Boolean, default: true },
   created_at: { type: Date, default: () => new Date() },
 } satisfies Fields<GuardianLink>;
 

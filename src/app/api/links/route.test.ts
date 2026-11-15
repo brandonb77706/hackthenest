@@ -10,6 +10,7 @@ vi.mock("@/features/guardians/service", () => ({
   listLinks: vi.fn(),
   removeLink: vi.fn(),
   updateSharing: vi.fn(),
+  updateEditControls: vi.fn(),
 }));
 
 import * as service from "@/features/guardians/service";
@@ -85,5 +86,23 @@ describe("DELETE /api/links/:id", () => {
     s.removeLink.mockResolvedValueOnce(true).mockResolvedValueOnce(false);
     expect((await DELETE(new Request("http://test"), ctx("l1"))).status).toBe(204);
     expect((await DELETE(new Request("http://test"), ctx("other"))).status).toBe(404);
+  });
+});
+
+describe("who can change what on a link", () => {
+  it("a user can't change what they're allowed to edit", async () => {
+    const res = await PATCH(req({ user_can_edit_routines: true }, "PATCH"), ctx("l1"));
+    expect(res.status).toBe(400);
+    expect(s.updateEditControls).not.toHaveBeenCalled();
+  });
+
+  it("a guardian changes only the edit controls, never the sharing", async () => {
+    me.role = "guardian";
+    s.updateEditControls.mockResolvedValue(true);
+    const res = await PATCH(req({ user_can_edit_routines: false, can_see_routines: true }, "PATCH"), ctx("l1"));
+    expect(await res.json()).toEqual({ user_can_edit_routines: false });
+    expect(s.updateEditControls).toHaveBeenCalledWith(me, "l1", { user_can_edit_routines: false });
+    expect(s.updateSharing).not.toHaveBeenCalled();
+    expect((await PATCH(req({ can_see_routines: true }, "PATCH"), ctx("l1"))).status).toBe(400);
   });
 });

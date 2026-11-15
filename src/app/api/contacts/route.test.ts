@@ -3,6 +3,9 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 
 vi.mock("next/server", () => ({ connection: vi.fn(async () => {}) }));
 vi.mock("@/lib/db", () => ({ getCurrentUserId: vi.fn(async () => "user-1") }));
+const refuseIfLocked = vi.fn(async (): Promise<Response | null> => null);
+vi.mock("@/features/guardians/service", () => ({ refuseIfLocked: (...a: unknown[]) => refuseIfLocked(...(a as [])) }));
+const lockedReply = () => Response.json({ error: "Sam manages your trusted contacts. Ask Sam to make changes.", locked: true }, { status: 403 });
 vi.mock("@/features/help/service", () => ({
   listContacts: vi.fn(),
   createContact: vi.fn(),
@@ -55,7 +58,8 @@ describe("/api/contacts", () => {
   });
 
   it("changes and removes a contact, or answers 404", async () => {
-    s.updateContact.mockResolvedValueOnce({ id: "c1" } as never).mockResolvedValueOnce(null);
+    s.listContacts.mockResolvedValue([{ id: "c1", ...sam } as never]);
+    s.updateContact.mockResolvedValueOnce({ id: "c1" } as never);
     expect((await PATCH(json("/api/contacts/c1", "PATCH", sam), ctx("c1"))).status).toBe(200);
     expect((await PATCH(json("/api/contacts/x", "PATCH", sam), ctx("x"))).status).toBe(404);
     s.deleteContact.mockResolvedValueOnce(true).mockResolvedValueOnce(false);
@@ -82,5 +86,28 @@ describe("/api/phrases", () => {
     s.deletePhrase.mockResolvedValueOnce(true).mockResolvedValueOnce(false);
     expect((await DELETE_PHRASE(new Request("http://test"), ctx("p1"))).status).toBe(204);
     expect((await DELETE_PHRASE(new Request("http://test"), ctx("x"))).status).toBe(404);
+  });
+});
+
+describe("when a guardian manages contacts", () => {
+  beforeEach(() => {
+    refuseIfLocked.mockResolvedValue(lockedReply());
+    s.listContacts.mockResolvedValue([{ id: "c1", ...sam, contact: "5550100142", can_see_routines: false, can_get_lost_alerts: false, can_get_stuck_alerts: false } as never]);
+  });
+
+  it("refuses adding, changing who they are, and removing", async () => {
+    expect((await POST(json("/api/contacts", "POST", sam))).status).toBe(403);
+    expect((await PATCH(json("/api/contacts/c1", "PATCH", { ...sam, name: "Samuel" }), ctx("c1"))).status).toBe(403);
+    expect((await DELETE(new Request("http://test"), ctx("c1"))).status).toBe(403);
+    expect(s.createContact).not.toHaveBeenCalled();
+    expect(s.updateContact).not.toHaveBeenCalled();
+    expect(s.deleteContact).not.toHaveBeenCalled();
+  });
+
+  it("still lets the user choose what a contact can see", async () => {
+    s.updateContact.mockResolvedValue({ id: "c1" } as never);
+    const res = await PATCH(json("/api/contacts/c1", "PATCH", { ...sam, can_get_lost_alerts: true }), ctx("c1"));
+    expect(res.status).toBe(200);
+    expect(s.updateContact).toHaveBeenCalledWith("user-1", "c1", expect.objectContaining({ can_get_lost_alerts: true }));
   });
 });

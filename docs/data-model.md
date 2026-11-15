@@ -150,6 +150,8 @@ A guardian (parent, aide, job coach) linked to a user. Two separate accounts; on
 | can_see_routines | boolean | Default false. Only the user can change sharing |
 | can_get_lost_alerts | boolean | Default false |
 | can_get_stuck_alerts | boolean | Default false |
+| user_can_edit_routines | boolean | Default true. Only the guardian changes it. Off: the user can do routines but not make, change or delete them |
+| user_can_edit_contacts | boolean | Default true. Only the guardian changes it. Off: the user can't add, change or delete trusted contacts, but still chooses what each can see |
 | created_at | date | |
 
 ## SetupCode

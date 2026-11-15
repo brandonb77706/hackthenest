@@ -7,6 +7,7 @@ import { connectDB, GuardianLinkModel, SetupCodeModel, toRecord, UserProfileMode
 import type { GuardianLink, ID, SetupCode, TrustedContactPermissions, UserProfile } from "@/lib/types";
 import { checkRedeem, CODE_TTL_MS, linkSides, makeCode, normalizeCode, type RedeemProblem } from "./codes";
 import { cleanName } from "@/features/onboarding/welcome";
+import { editRules, lockedText, type EditArea, type EditRules } from "./editRules";
 
 export interface NewCode {
   code: string;
@@ -110,6 +111,9 @@ async function accountNames(ids: ID[]): Promise<Account[]> {
 
 export interface LinkedPerson extends TrustedContactPermissions {
   link_id: ID;
+  /** Set by the guardian: can the user change their own routines / contacts */
+  user_can_edit_routines: boolean;
+  user_can_edit_contacts: boolean;
   /** The other account */
   id: ID;
   name: string;
@@ -130,6 +134,8 @@ export async function listLinks(me: SignedInUser): Promise<LinkedPerson[]> {
     can_see_routines: l.can_see_routines,
     can_get_lost_alerts: l.can_get_lost_alerts,
     can_get_stuck_alerts: l.can_get_stuck_alerts,
+    user_can_edit_routines: l.user_can_edit_routines !== false,
+    user_can_edit_contacts: l.user_can_edit_contacts !== false,
   }));
 }
 
@@ -151,4 +157,39 @@ export async function updateSharing(
   await connectDB();
   const res = await GuardianLinkModel.updateOne({ _id: linkId, user_id: me.id }, { $set: patch });
   return res.matchedCount === 1;
+}
+
+export interface EditControls {
+  user_can_edit_routines?: boolean;
+  user_can_edit_contacts?: boolean;
+}
+
+/** What the user can change themselves. Only the guardian can change it. */
+export async function updateEditControls(me: SignedInUser, linkId: string, patch: EditControls): Promise<boolean> {
+  if (me.role !== "guardian" || !isValidObjectId(linkId)) return false;
+  await connectDB();
+  const res = await GuardianLinkModel.updateOne({ _id: linkId, guardian_id: me.id }, { $set: patch });
+  return res.matchedCount === 1;
+}
+
+/** Whether this user can change their own routines and contacts. */
+export async function getEditRules(userId: ID): Promise<EditRules> {
+  await connectDB();
+  const links = (await GuardianLinkModel.find({ user_id: userId })).map((doc) => toRecord<GuardianLink>(doc));
+  if (links.length === 0) return editRules([]);
+  const guardians = await accountNames(links.map((l) => l.guardian_id));
+  return editRules(
+    links.map((l, i) => ({
+      guardianName: guardians[i]?.name ?? "",
+      user_can_edit_routines: l.user_can_edit_routines !== false,
+      user_can_edit_contacts: l.user_can_edit_contacts !== false,
+    })),
+  );
+}
+
+/** For API routes: a 403 with who to ask, or null when the user may change this. */
+export async function refuseIfLocked(userId: ID, area: EditArea): Promise<Response | null> {
+  const rule = (await getEditRules(userId))[area];
+  if (rule.allowed) return null;
+  return Response.json({ error: lockedText(area, rule), locked: true }, { status: 403 });
 }

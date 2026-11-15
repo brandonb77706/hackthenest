@@ -11,6 +11,8 @@ import {
   TokenTransactionModel,
   UserProfileModel,
 } from "@/lib/db";
+import { getEditRules } from "@/features/guardians/service";
+import type { EditRules } from "@/features/guardians/editRules";
 import { settingsOf, type MeSettings } from "@/features/me/service";
 import { localNow } from "@/lib/time";
 import type { Avatar, CheckIn, ID, Routine, Step, UserProfile } from "@/lib/types";
@@ -23,11 +25,13 @@ export interface TodayResponse {
   routines: TodayRoutine[];
   /** Color scheme and Buddy, so this device can catch up with the profile */
   settings: MeSettings;
+  /** Whether the user can make and change routines (a guardian can turn it off). Missing means allowed */
+  edit?: EditRules;
 }
 
 export async function getToday(userId: ID, timeZone: string, at = new Date()): Promise<TodayResponse> {
   await connectDB();
-  const [profile, tokenSum, routineDocs, stepDocs, recent] = await Promise.all([
+  const [profile, tokenSum, routineDocs, stepDocs, recent, edit] = await Promise.all([
     UserProfileModel.findOne({ user_id: userId }),
     TokenTransactionModel.aggregate<{ total: number }>([
       { $match: { user_id: new mongoose.Types.ObjectId(userId) } },
@@ -37,6 +41,7 @@ export async function getToday(userId: ID, timeZone: string, at = new Date()): P
     StepModel.find({ user_id: userId }, { routine_id: 1, order: 1 }).sort({ order: 1 }),
     // A day and a half covers "today" in any time zone; filtered to the local date below.
     CheckInModel.find({ user_id: userId, status: "done", time: { $gte: new Date(at.getTime() - 36 * 3600_000) } }),
+    getEditRules(userId),
   ]);
 
   const stepIds = new Map<string, string[]>();
@@ -60,6 +65,7 @@ export async function getToday(userId: ID, timeZone: string, at = new Date()): P
     streak: profile?.current_streak ?? 0,
     settings: settingsOf(profileRecord, buddyDoc ? toRecord<Avatar>(buddyDoc).name : null),
     tokens: tokenSum[0]?.total ?? 0,
+    edit,
     routines: summarizeDay({
       routines: routineDocs.map((doc) => {
         const r = toRecord<Routine>(doc);

@@ -15,12 +15,12 @@ const routine = (id: string, title: string, status: TodayRoutine["status"], over
   ...overrides,
 });
 
-function serve(routines: TodayRoutine[] | null) {
+function serve(routines: TodayRoutine[] | null, extra: Record<string, unknown> = {}) {
   vi.stubGlobal(
     "fetch",
     vi.fn(async () =>
       routines
-        ? new Response(JSON.stringify({ name: "Jordan", streak: 0, tokens: 0, routines }), { status: 200 })
+        ? new Response(JSON.stringify({ name: "Jordan", streak: 0, tokens: 0, routines, ...extra }), { status: 200 })
         : new Response("{}", { status: 500 }),
     ),
   );
@@ -65,5 +65,16 @@ describe("RoutinesScreen", () => {
     serve(null);
     render(<RoutinesScreen />);
     expect(await screen.findByRole("alert")).toHaveTextContent(/Couldn't load/);
+  });
+
+  it("hides New and Edit when a guardian manages routines, but routines can still be started", async () => {
+    serve([routine("a", "Morning routine", "next")], {
+      edit: { routines: { allowed: false, managedBy: ["Sam"] }, contacts: { allowed: true, managedBy: [] } },
+    });
+    render(<RoutinesScreen />);
+    expect(await screen.findByText("Sam manages your routines. Ask Sam to make changes.")).toBeInTheDocument();
+    expect(screen.queryByRole("link", { name: "Make a new routine" })).toBeNull();
+    expect(screen.queryByRole("link", { name: "Edit Morning routine" })).toBeNull();
+    expect(screen.getByRole("link", { name: "Start Morning routine" })).toBeInTheDocument();
   });
 });

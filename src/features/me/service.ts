@@ -2,6 +2,8 @@
 // Based on Adrian's getMeSummary.
 
 import mongoose, { isValidObjectId } from "mongoose";
+import { getEditRules } from "@/features/guardians/service";
+import type { EditRules } from "@/features/guardians/editRules";
 import { listContacts } from "@/features/help/service";
 import {
   AvatarModel,
@@ -27,6 +29,8 @@ export interface MeData {
   buddies: BuddyChoice[];
   contacts: TrustedContact[];
   settings: MeSettings;
+  /** Whether the user can add and change contacts (a guardian can turn it off). Missing means allowed */
+  edit?: EditRules;
 }
 
 export function settingsOf(profile: UserProfile | null, buddyName: string | null): MeSettings {
@@ -39,7 +43,7 @@ export function settingsOf(profile: UserProfile | null, buddyName: string | null
 
 export async function getMe(userId: ID): Promise<MeData> {
   await connectDB();
-  const [profileDoc, totals, ownedDocs, catalogDocs, contacts] = await Promise.all([
+  const [profileDoc, totals, ownedDocs, catalogDocs, contacts, edit] = await Promise.all([
     UserProfileModel.findOne({ user_id: userId }),
     // The balance is the sum of the user's transactions (docs/rewards.md).
     TokenTransactionModel.aggregate<{ total: number }>([
@@ -49,6 +53,7 @@ export async function getMe(userId: ID): Promise<MeData> {
     UserAvatarModel.find({ user_id: userId }),
     AvatarModel.find({}),
     listContacts(userId),
+    getEditRules(userId),
   ]);
 
   const profile = profileDoc ? toRecord<UserProfile>(profileDoc) : null;
@@ -71,6 +76,7 @@ export async function getMe(userId: ID): Promise<MeData> {
     buddies: buddyChoices(catalog, ownedIds, profile?.equipped_avatar_id ?? null),
     contacts,
     settings: settingsOf(profile, buddy?.name ?? null),
+    edit,
   };
 }
 

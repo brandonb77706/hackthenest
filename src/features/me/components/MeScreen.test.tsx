@@ -213,4 +213,20 @@ describe("Me", () => {
     expect(getSettings().showBuddy).toBe(false);
     expect(bodyOf("/api/me/settings")).toEqual({ show_buddy: false });
   });
+
+  it("hides adding and changing contacts when a guardian manages them, but sharing still works", async () => {
+    const user = userEvent.setup();
+    render(
+      <MeScreen
+        data={data({ edit: { routines: { allowed: true, managedBy: [] }, contacts: { allowed: false, managedBy: ["Sam"] } } })}
+      />,
+    );
+    expect(screen.getByText("Sam manages your trusted contacts. Ask Sam to make changes.")).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "+ Add a trusted contact" })).toBeNull();
+    const first = screen.getAllByRole("button", { name: /Change what they can see/ })[0];
+    await user.click(first);
+    const dialog = screen.getByRole("dialog");
+    expect(within(dialog).queryByRole("button", { name: "Change name or number" })).toBeNull();
+    expect(within(dialog).getAllByRole("switch").length).toBeGreaterThan(0);
+  });
 });

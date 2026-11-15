@@ -23,6 +23,7 @@ import { COLOR_SCHEMES, type ColorSchemeId } from "@/lib/theme";
 import type { TrustedContact, TrustedContactPermissions } from "@/lib/types";
 import { ContactForm } from "@/features/help/components/ContactForm";
 import { GuardiansSection } from "@/features/guardians/components/GuardiansSection";
+import { ManagedNote } from "@/features/guardians/components/ManagedNote";
 import { SHARING, sharingSummary } from "../sharing";
 import { SignOutButton } from "@/features/auth/components/SignOutButton";
 export { sharingSummary } from "../sharing";
@@ -56,6 +57,9 @@ async function send(
 }
 
 export function MeScreen({ data }: { data: MeData }) {
+  // A guardian can turn off adding and changing contacts. Choosing what each can see stays the user's.
+  const contactRule = data.edit?.contacts;
+  const canEditContacts = contactRule?.allowed !== false;
   const [view, setView] = useState<View>({ kind: "home" });
   /** Whose sharing popup is open */
   const [sharingId, setSharingId] = useState<string | null>(null);
@@ -456,13 +460,17 @@ export function MeScreen({ data }: { data: MeData }) {
           ))}
         </ul>
       )}
-      <button
-        type="button"
-        onClick={() => go({ kind: "contact" })}
-        className={`${br.ghost} min-h-[54px] rounded-2xl text-[17px]`}
-      >
-        + Add a trusted contact
-      </button>
+      {canEditContacts ? (
+        <button
+          type="button"
+          onClick={() => go({ kind: "contact" })}
+          className={`${br.ghost} min-h-[54px] rounded-2xl text-[17px]`}
+        >
+          + Add a trusted contact
+        </button>
+      ) : (
+        contactRule && <ManagedNote area="contacts" rule={contactRule} />
+      )}
 
       {sharingFor && (
         <Dialog
@@ -487,13 +495,15 @@ export function MeScreen({ data }: { data: MeData }) {
             ))}
           </div>
           {errorLine}
-          <button
-            type="button"
-            onClick={() => go({ kind: "contact", existing: sharingFor })}
-            className={`${br.ghost} min-h-[54px] rounded-2xl text-[17px]`}
-          >
-            Change name or number
-          </button>
+          {canEditContacts && (
+            <button
+              type="button"
+              onClick={() => go({ kind: "contact", existing: sharingFor })}
+              className={`${br.ghost} min-h-[54px] rounded-2xl text-[17px]`}
+            >
+              Change name or number
+            </button>
+          )}
           <button
             type="button"
             onClick={() => setSharingId(null)}

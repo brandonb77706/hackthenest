@@ -3,6 +3,9 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 
 vi.mock("next/server", () => ({ connection: vi.fn(async () => {}) }));
 vi.mock("@/lib/db", () => ({ getCurrentUserId: vi.fn(async () => "user-1") }));
+const refuseIfLocked = vi.fn(async (): Promise<Response | null> => null);
+vi.mock("@/features/guardians/service", () => ({ refuseIfLocked: (...a: unknown[]) => refuseIfLocked(...(a as [])) }));
+const lockedReply = () => Response.json({ error: "Sam manages your routines. Ask Sam to make changes.", locked: true }, { status: 403 });
 vi.mock("@/features/routine-builder/service", () => ({
   listRoutines: vi.fn(),
   createRoutine: vi.fn(),
@@ -102,5 +105,22 @@ describe("/api/routines/[id]", () => {
     expect((await DELETE(new Request("http://test"), ctx("r1"))).status).toBe(204);
     expect((await DELETE(new Request("http://test"), ctx("missing"))).status).toBe(404);
     expect(s.deleteRoutine).toHaveBeenCalledWith("user-1", "r1");
+  });
+});
+
+describe("when a guardian manages routines", () => {
+  it("refuses to make, change or delete a routine, and saves nothing", async () => {
+    refuseIfLocked.mockResolvedValue(lockedReply());
+    const post = await POST(new Request("http://test", { method: "POST", body: JSON.stringify(body) }));
+    expect(post.status).toBe(403);
+    expect(await post.json()).toMatchObject({ locked: true });
+    const ctx = { params: Promise.resolve({ id: "r1" }) };
+    expect((await PATCH(new Request("http://test", { method: "PATCH", body: JSON.stringify(body) }), ctx)).status).toBe(403);
+    expect((await DELETE(new Request("http://test"), ctx)).status).toBe(403);
+    expect(s.createRoutine).not.toHaveBeenCalled();
+    expect(s.updateRoutine).not.toHaveBeenCalled();
+    expect(s.deleteRoutine).not.toHaveBeenCalled();
+    expect(refuseIfLocked).toHaveBeenCalledWith("user-1", "routines");
+    refuseIfLocked.mockResolvedValue(null);
   });
 });

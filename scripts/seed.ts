@@ -129,6 +129,16 @@ async function seedLogins() {
     );
     console.log(`Login ready: ${login.email} (${login.role})`);
   }
+
+  // Sam is Jordan's guardian in the demo. Jordan chose to share routines with Sam
+  // (real links start with everything off; the user turns sharing on).
+  const [jordan, sam] = DEMO_LOGINS.map((l) => new mongoose.Types.ObjectId(l.id));
+  await GuardianLinkModel.updateOne(
+    { user_id: jordan, guardian_id: sam },
+    { $set: { can_see_routines: true }, $setOnInsert: { created_at: now } },
+    { upsert: true },
+  );
+  console.log("Sam is linked to Jordan as their guardian (sees routines)");
 }
 
 main()

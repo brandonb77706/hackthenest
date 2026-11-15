@@ -137,6 +137,10 @@ export interface GuardianLink extends TrustedContactPermissions {
   user_id: ID;
   /** Their guardian's account */
   guardian_id: ID;
+  /** Set by the guardian. On by default: the user makes and changes their own routines */
+  user_can_edit_routines: boolean;
+  /** Set by the guardian. On by default: the user adds and changes their own trusted contacts */
+  user_can_edit_contacts: boolean;
   created_at: string;
 }
 

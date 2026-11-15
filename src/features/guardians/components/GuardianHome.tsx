@@ -4,6 +4,7 @@
 // someone new, and entering a code from someone. The full guardian view
 // (Today, Routines, Contacts) comes next.
 
+import Link from "next/link";
 import { useEffect, useState, type FormEvent } from "react";
 import { Dialog } from "@/components/bridge/Dialog";
 import { br } from "@/components/bridge/styles";
@@ -111,10 +112,13 @@ export function GuardianHome({ name }: { name: string }) {
               >
                 {(p.name || "?").trim().charAt(0).toUpperCase()}
               </span>
-              <span className="flex min-w-0 grow flex-col">
-                <span className="font-display text-[18px] font-bold leading-tight">{p.name || p.email}</span>
+              <Link
+                href={`/guardian/${p.id}`}
+                className="flex min-h-12 min-w-0 grow flex-col text-ink no-underline"
+              >
+                <span className="font-display text-[18px] font-bold leading-tight underline">{p.name || p.email}</span>
                 <span className="text-[15px] text-ink2">{sharingSummary(p) === "Sees nothing" ? "Shares nothing yet" : sharingSummary(p).replace("Sees", "Shares")}</span>
-              </span>
+              </Link>
               <button
                 type="button"
                 onClick={() => open({ kind: "remove", person: p })}
