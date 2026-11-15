@@ -21,10 +21,14 @@ The users are people with autism, ADHD, and intellectual disabilities, and many 
 | Finish a step | 5 |
 | Finish a whole routine | 20 bonus |
 | Use camera help to handle a letter or bill | 10 |
-| First routine you built yourself | 50 one-time |
+| First routine you ever finish | 50 one-time |
 | Daily streak milestone (3, 7, 14, 30 days) | 25, 50, 100, 200 |
 
 A "streak day" = at least one routine finished that day.
+
+**Once per routine per day.** Each routine pays its step tokens and its bonus once a day, in the user's own time zone. Repeating a routine the same day is allowed (practice is good), but it earns nothing more. A different routine on the same day pays its own tokens, and the same routine pays again the next day. This stops tapping through a short routine over and over to farm tokens. The server decides all of this from saved check-ins; it never trusts the phone to say a routine was finished.
+
+Code: `src/features/rewards/` (`earning.ts` amounts, `stepAwards.ts` the rules above, `service.ts` saves the tokens).
 
 ## Avatars
 

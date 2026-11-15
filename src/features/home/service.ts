@@ -71,12 +71,15 @@ export async function getToday(userId: ID, timeZone: string, at = new Date()): P
   };
 }
 
-/** Saves that a step was finished. Returns false if the step isn't in that routine or isn't the user's. */
-export async function markStepDone(userId: ID, routineId: string, stepId: string, usedHelp: boolean): Promise<boolean> {
-  if (!isValidObjectId(routineId) || !isValidObjectId(stepId)) return false;
+/**
+ * Saves that a step was finished. Returns the new check-in's id (rewards links tokens to it),
+ * or null if the step isn't in that routine or isn't the user's.
+ */
+export async function markStepDone(userId: ID, routineId: string, stepId: string, usedHelp: boolean): Promise<ID | null> {
+  if (!isValidObjectId(routineId) || !isValidObjectId(stepId)) return null;
   await connectDB();
   const step = await StepModel.findOne({ user_id: userId, _id: stepId, routine_id: routineId }, { _id: 1 });
-  if (!step) return false;
-  await CheckInModel.create({ user_id: userId, step_id: stepId, routine_id: routineId, status: "done", used_help: usedHelp });
-  return true;
+  if (!step) return null;
+  const checkIn = await CheckInModel.create({ user_id: userId, step_id: stepId, routine_id: routineId, status: "done", used_help: usedHelp });
+  return String(checkIn._id);
 }
