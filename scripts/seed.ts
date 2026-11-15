@@ -3,6 +3,7 @@
 //
 //   npm run db:seed
 
+import { hashPassword } from "better-auth/crypto";
 import mongoose from "mongoose";
 import {
   AvatarModel,
@@ -73,6 +74,49 @@ async function main() {
     upsert,
   );
   console.log(`Test user ${user_id}: profile ready, Fox equipped`);
+
+  await seedLogins();
+}
+
+// Demo logins, stored the way Better Auth stores them (src/lib/auth/server.ts).
+// Jordan's account id is DEMO_USER_ID, so signing in as Jordan shows the sample data.
+// The password is for the demo only. Set DEMO_PASSWORD in .env.local to change it.
+const DEMO_LOGINS = [
+  { id: DEMO_USER_ID, name: "Jordan", email: "jordan@example.com", role: "user" },
+  { id: "64b000000000000000000002", name: "Sam", email: "sam@example.com", role: "guardian" },
+] as const;
+
+async function seedLogins() {
+  const db = mongoose.connection.db;
+  if (!db) throw new Error("Not connected");
+  const password = await hashPassword(process.env.DEMO_PASSWORD || "bridge-demo-2026");
+  const now = new Date();
+
+  for (const login of DEMO_LOGINS) {
+    const _id = new mongoose.Types.ObjectId(login.id);
+    const taken = await db.collection("user").findOne({ email: login.email, _id: { $ne: _id } });
+    if (taken) {
+      console.log(`Skipped ${login.email}: another account already uses that email`);
+      continue;
+    }
+    await db.collection("user").updateOne(
+      { _id },
+      {
+        $set: { email: login.email, role: login.role, emailVerified: true, updatedAt: now },
+        $setOnInsert: { name: login.name, image: null, createdAt: now },
+      },
+      { upsert: true },
+    );
+    await db.collection("account").updateOne(
+      { userId: _id, providerId: "credential" },
+      {
+        $set: { password, updatedAt: now },
+        $setOnInsert: { accountId: login.id, createdAt: now },
+      },
+      { upsert: true },
+    );
+    console.log(`Login ready: ${login.email} (${login.role})`);
+  }
 }
 
 main()

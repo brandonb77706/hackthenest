@@ -21,6 +21,7 @@ import {
 import { COLOR_SCHEMES, type ColorSchemeId } from "@/lib/theme";
 import type { TrustedContact, TrustedContactPermissions } from "@/lib/types";
 import { ContactForm } from "@/features/help/components/ContactForm";
+import { SignOutButton } from "@/features/auth/components/SignOutButton";
 import type { MeData } from "../service";
 import { buddyTag, formatTokens, type BuddyChoice } from "../summary";
 
@@ -648,6 +649,10 @@ export function MeScreen({ data }: { data: MeData }) {
             <span className="text-[15px] text-ink2">{r.sub}</span>
           </Switch>
         ))}
+      </div>
+
+      <div className="mt-4">
+        <SignOutButton />
       </div>
     </div>
   );

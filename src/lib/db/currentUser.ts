@@ -1,13 +1,16 @@
+import { requireUser } from "@/lib/auth/session";
 import type { ID } from "@/lib/types";
 
 /**
- * Fake user until real login is added. Everyone shares this test user.
- * Every query still filters by user_id, so swapping this for real auth later
- * doesn't change any data or feature code.
+ * The demo account (Jordan). `npm run db:seed` puts the sample data under this
+ * id and creates the jordan@example.com login for it.
  */
 export const DEMO_USER_ID: ID = "64b000000000000000000001";
 
-/** The signed-in user's id. Server code only. */
+/**
+ * The signed-in user's id. Server code only. Every query filters by it.
+ * Not signed in: goes to the login page (the proxy already sends API calls a 401).
+ */
 export async function getCurrentUserId(): Promise<ID> {
-  return DEMO_USER_ID;
+  return (await requireUser()).id;
 }
