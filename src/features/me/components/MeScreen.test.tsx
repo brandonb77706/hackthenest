@@ -61,10 +61,13 @@ const bodyOf = (url: string) => {
 };
 
 describe("Me", () => {
-  it("shows the name, tokens, Buddy, and progress to the next reward", () => {
+  it("shows the name, tokens, Buddy, and progress to the next reward", async () => {
+    const user = userEvent.setup();
     render(<MeScreen data={data()} />);
     expect(screen.getByRole("heading", { level: 1, name: "Jordan" })).toBeInTheDocument();
     expect(screen.getByText("25 tokens · Buddy: Fox")).toBeInTheDocument();
+    await user.click(screen.getByRole("button", { name: /Badges and rewards/ }));
+    expect(screen.getByRole("heading", { level: 1, name: "Badges and rewards" })).toBeInTheDocument();
     expect(screen.getByRole("progressbar", { name: "Next reward: Astronaut cat" })).toHaveAttribute("aria-valuenow", "25");
     expect(screen.getByText("75 tokens more to get Astronaut cat.")).toBeInTheDocument();
   });

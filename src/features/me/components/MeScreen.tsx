@@ -8,7 +8,7 @@
 import { useEffect, useRef, useState, useSyncExternalStore } from "react";
 import { BuddyAvatar } from "@/components/bridge/BuddyAvatar";
 import { Dialog } from "@/components/bridge/Dialog";
-import { CoinIcon, Icon } from "@/components/bridge/Icon";
+import { Icon } from "@/components/bridge/Icon";
 import { SchemeCard } from "@/components/bridge/SchemeCard";
 import { Switch } from "@/components/bridge/Switch";
 import { br } from "@/components/bridge/styles";
@@ -25,6 +25,7 @@ import { ContactForm } from "@/features/help/components/ContactForm";
 import { GuardiansSection } from "@/features/guardians/components/GuardiansSection";
 import { ManagedNote } from "@/features/guardians/components/ManagedNote";
 import { SHARING, sharingSummary } from "../sharing";
+import { BadgesCard, RewardsView } from "./Rewards";
 import { SignOutButton } from "@/features/auth/components/SignOutButton";
 export { sharingSummary } from "../sharing";
 import type { MeData } from "../service";
@@ -34,6 +35,7 @@ type View =
   | { kind: "home" }
   | { kind: "buddy" }
   | { kind: "schemes" }
+  | { kind: "rewards" }
   | { kind: "contact"; existing?: TrustedContact };
 
 const byName = (a: TrustedContact, b: TrustedContact) =>
@@ -248,10 +250,12 @@ export function MeScreen({ data }: { data: MeData }) {
             tabIndex={-1}
             className="m-0 font-display text-[28px] font-bold"
           >
-            {view.kind === "buddy" ? "Choose your Buddy" : "Color scheme"}
+            {view.kind === "buddy" ? "Choose your Buddy" : view.kind === "rewards" ? "Badges and rewards" : "Color scheme"}
           </h1>
         </div>
         {errorLine}
+
+        {view.kind === "rewards" && <RewardsView tokens={tokens} nextReward={nextReward} badges={data.badges ?? []} />}
 
         {view.kind === "buddy" && (
           <>
@@ -369,42 +373,7 @@ export function MeScreen({ data }: { data: MeData }) {
       </div>
       {errorLine}
 
-      <h2 className="m-0 mt-2.5 font-display text-[22px] font-bold">Rewards</h2>
-      <div className="flex items-center gap-3.5 rounded-[22px] bg-primary-soft p-[18px]">
-        <CoinIcon size={54} />
-        <div className="flex min-w-0 grow flex-col gap-0.5">
-          <span className="font-display text-[30px] font-bold leading-none">
-            {formatTokens(tokens)}
-          </span>
-          <span className="text-[15px] text-ink2">
-            You earn tokens when you finish steps and routines.
-          </span>
-        </div>
-      </div>
-      {nextReward && (
-        <div className={`${br.card} flex flex-col gap-2 rounded-[20px] p-4`}>
-          <span
-            id="next-reward-label"
-            className="font-display text-[18px] font-semibold"
-          >
-            {nextReward.label}
-          </span>
-          <div
-            role="progressbar"
-            aria-labelledby="next-reward-label"
-            aria-valuemin={0}
-            aria-valuemax={100}
-            aria-valuenow={nextReward.percent}
-            className="h-3 overflow-hidden rounded-full bg-sunken"
-          >
-            <div
-              className="h-full rounded-full bg-switch-on"
-              style={{ width: `${nextReward.percent}%` }}
-            />
-          </div>
-          <span className="text-[15px] text-ink2">{nextReward.detail}</span>
-        </div>
-      )}
+      <BadgesCard badges={data.badges ?? []} nextReward={nextReward} onOpen={() => go({ kind: "rewards" })} />
 
       <h2 className="m-0 mt-2.5 font-display text-[22px] font-bold">
         Trusted contacts
