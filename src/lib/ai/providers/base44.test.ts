@@ -46,6 +46,18 @@ describe("Base44 provider", () => {
     });
   });
 
+  it("sends photos to the function, which stores them privately", async () => {
+    returns({ what_it_is: "A bill" });
+    const image = { data: "aGVsbG8=", mime: "image/jpeg" as const };
+    await provider().generateJSON({ prompt: "Read this", schema: {}, images: [image] });
+    expect(invoke).toHaveBeenCalledWith(BASE44_FUNCTION, {
+      secret: "s3cret",
+      prompt: "Read this",
+      response_json_schema: {},
+      images: [image],
+    });
+  });
+
   it("reads JSON that comes back as text", async () => {
     returns('{"title":"T"}');
     expect(await provider().generateJSON({ prompt: "p", schema: {} })).toEqual({ title: "T" });

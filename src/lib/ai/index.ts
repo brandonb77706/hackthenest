@@ -33,4 +33,4 @@ export const ai = {
 };
 
 export type { AIFeature } from "./models";
-export type { AIProvider, JSONInput, TextInput } from "./types";
+export type { AIProvider, ImageInput, JSONInput, TextInput } from "./types";

@@ -82,6 +82,7 @@ describe("activeProvider", () => {
 
   it("keeps features on the mock until they're switched", () => {
     vi.stubEnv("NEXT_PUBLIC_BASE44_APP_ID", "app123");
-    expect(activeProvider("cameraHelp")).toBe("mock");
+    expect(activeProvider("cameraHelp")).toBe("base44");
+    expect(activeProvider("stuckHelp")).toBe("mock");
   });
 });

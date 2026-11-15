@@ -49,7 +49,7 @@ Rules:
 - Say what it is in one sentence.
 - Summarize what it means in 2 to 3 short sentences.
 - List what they need to do, one action per item, in order.
-- List any deadlines with dates.
+- List any deadlines with dates, written as YYYY-MM-DD (for example 2026-11-28).
 - If you can't read it clearly, say so. Never guess amounts or dates.
 - No legal or medical advice. If it looks urgent, say who to call.
 

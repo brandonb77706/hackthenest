@@ -4,7 +4,7 @@ Code that runs on Base44, not in our Next.js app. Copy it into the Base44 app ed
 
 ## functions/invokeLLM.ts
 
-Base44 blocks outside apps from calling `InvokeLLM` directly, so our server calls this backend function and the function calls the AI. Setup:
+Base44 blocks outside apps from calling `InvokeLLM` or uploading files directly, so our server calls this backend function and the function does both. Photos for Scan are stored as **private** files and the AI reads them through a link that expires in 5 minutes. Setup:
 
 1. In the Base44 app, add a backend function named `invokeLLM` and paste in `functions/invokeLLM.ts`.
 2. In the Base44 app's secrets, add `BRIDGE_FUNCTION_SECRET` with the same value as `BASE44_FUNCTION_SECRET` in your `.env.local`.

@@ -1,8 +1,9 @@
 "use client";
 
 // The step player from the design: one step per screen, read out loud, with
-// Done and Back, then a results screen. Tapping Done saves that the step was
-// finished, so Today shows real progress.
+// Done and Back, then a results screen. For a saved routine, tapping Done saves
+// that the step was finished, so Today shows real progress. A walkthrough (like
+// "Walk me through it" on Scan) only steps through a list and saves nothing.
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -14,17 +15,54 @@ import type { RoutineWithSteps } from "@/features/routine-builder/service";
 import { play, stop } from "@/lib/voice/player";
 import { stepIcon } from "../stepIcon";
 
+export interface Walkthrough {
+  title: string;
+  steps: string[];
+}
+
 interface Props {
-  routineId: string;
+  /** A saved routine to load. Leave out when passing a walkthrough. */
+  routineId?: string;
+  /** Steps to go through without saving anything */
+  walkthrough?: Walkthrough;
+  /** For a walkthrough: called by the close and Continue buttons */
+  onExit?: () => void;
   /** 1-based step to open on, e.g. from "Keep going" */
   startStep?: number;
 }
 
+function walkthroughRoutine(w: Walkthrough): RoutineWithSteps {
+  return {
+    id: "walkthrough",
+    user_id: "",
+    title: w.title,
+    goal: "",
+    days: [],
+    start_time: "00:00",
+    active: true,
+    tone: "orange",
+    remind: false,
+    steps: w.steps.map((text, i) => ({
+      id: `w${i}`,
+      user_id: "",
+      routine_id: "walkthrough",
+      order: i + 1,
+      text,
+      minutes: 1,
+      image_url: null,
+      audio_url: null,
+    })),
+  };
+}
+
 type Load = { status: "loading" } | { status: "missing" } | { status: "error" } | { status: "ready"; routine: RoutineWithSteps };
 
-export function StepPlayer({ routineId, startStep = 1 }: Props) {
+export function StepPlayer({ routineId, walkthrough, onExit, startStep = 1 }: Props) {
   const router = useRouter();
-  const [load, setLoad] = useState<Load>({ status: "loading" });
+  const [load, setLoad] = useState<Load>(() =>
+    walkthrough && walkthrough.steps.length > 0 ? { status: "ready", routine: walkthroughRoutine(walkthrough) } : { status: "loading" },
+  );
+  const saves = !walkthrough;
   const [index, setIndex] = useState(0);
   const [finishedMinutes, setFinishedMinutes] = useState<number | null>(null);
   const [saving, setSaving] = useState(false);
@@ -33,6 +71,10 @@ export function StepPlayer({ routineId, startStep = 1 }: Props) {
   const gotHelp = useRef(new Set<string>());
 
   useEffect(() => {
+    if (walkthrough) {
+      startedAt.current = Date.now();
+      return () => stop();
+    }
     let cancelled = false;
     (async () => {
       try {
@@ -54,6 +96,8 @@ export function StepPlayer({ routineId, startStep = 1 }: Props) {
       cancelled = true;
       stop();
     };
+    // The walkthrough is read once when the player opens.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [routineId, startStep]);
 
   const routine = load.status === "ready" ? load.routine : null;
@@ -91,21 +135,23 @@ export function StepPlayer({ routineId, startStep = 1 }: Props) {
 
   async function done() {
     if (!routine || !step || saving) return;
-    setSaving(true);
     setError("");
-    try {
-      const response = await fetch(`/api/routines/${routine.id}/steps/${step.id}/done`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ used_help: gotHelp.current.has(step.id) }),
-      });
-      if (!response.ok) throw new Error(String(response.status));
-    } catch {
+    if (saves) {
+      setSaving(true);
+      try {
+        const response = await fetch(`/api/routines/${routine.id}/steps/${step.id}/done`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ used_help: gotHelp.current.has(step.id) }),
+        });
+        if (!response.ok) throw new Error(String(response.status));
+      } catch {
+        setSaving(false);
+        setError("Couldn't save that step. Check your internet and tap Done again.");
+        return;
+      }
       setSaving(false);
-      setError("Couldn't save that step. Check your internet and tap Done again.");
-      return;
     }
-    setSaving(false);
     if (index < total - 1) {
       setIndex(index + 1);
       return;
@@ -124,9 +170,20 @@ export function StepPlayer({ routineId, startStep = 1 }: Props) {
   return (
     <div className={`tone-${routine.tone} flex min-h-dvh flex-col bg-canvas`}>
       <div className="flex items-center gap-3.5 pl-3.5 pr-[18px] pt-[22px]">
-        <Link href="/" aria-label="Leave routine" className="flex size-12 shrink-0 items-center justify-center text-ink2">
-          <Icon name="close" size={28} strokeWidth={2.4} />
-        </Link>
+        {onExit ? (
+          <button
+            type="button"
+            onClick={onExit}
+            aria-label="Leave"
+            className="flex size-12 shrink-0 items-center justify-center border-0 bg-transparent p-0 text-ink2"
+          >
+            <Icon name="close" size={28} strokeWidth={2.4} />
+          </button>
+        ) : (
+          <Link href="/" aria-label="Leave routine" className="flex size-12 shrink-0 items-center justify-center text-ink2">
+            <Icon name="close" size={28} strokeWidth={2.4} />
+          </Link>
+        )}
         <div
           role="progressbar"
           aria-label="Steps done"
@@ -161,9 +218,15 @@ export function StepPlayer({ routineId, startStep = 1 }: Props) {
             </div>
           </div>
           <div className="border-t-2 border-line px-4 pb-7 pt-[18px]">
-            <Link href="/" className={`${br.cta} flex h-[60px] w-full items-center justify-center rounded-2xl text-[22px] no-underline`}>
-              Continue
-            </Link>
+            {onExit ? (
+              <button type="button" onClick={onExit} className={`${br.cta} h-[60px] w-full rounded-2xl text-[22px]`}>
+                Continue
+              </button>
+            ) : (
+              <Link href="/" className={`${br.cta} flex h-[60px] w-full items-center justify-center rounded-2xl text-[22px] no-underline`}>
+                Continue
+              </Link>
+            )}
           </div>
         </>
       ) : (
