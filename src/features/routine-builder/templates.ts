@@ -21,6 +21,8 @@ export const TEMPLATES: RoutineTemplate[] = [
     label: "Take medicine",
     routine: {
       title: "Take medicine",
+      tone: "sea",
+      remind: true,
       goal: "",
       days: everyDay,
       start_time: "08:00",
@@ -36,6 +38,8 @@ export const TEMPLATES: RoutineTemplate[] = [
     label: "Morning",
     routine: {
       title: "Morning",
+      tone: "gold",
+      remind: true,
       goal: "",
       days: everyDay,
       start_time: "07:30",
@@ -53,6 +57,8 @@ export const TEMPLATES: RoutineTemplate[] = [
     label: "Get ready for work",
     routine: {
       title: "Get ready for work",
+      tone: "orange",
+      remind: true,
       goal: "",
       days: weekdays,
       start_time: "08:00",
@@ -69,6 +75,8 @@ export const TEMPLATES: RoutineTemplate[] = [
     label: "Bedtime",
     routine: {
       title: "Bedtime",
+      tone: "teal",
+      remind: true,
       goal: "",
       days: everyDay,
       start_time: "21:30",
@@ -85,6 +93,8 @@ export const TEMPLATES: RoutineTemplate[] = [
 const BLANK: RoutineInput = {
   title: "",
   goal: "",
+  tone: "teal",
+  remind: true,
   days: everyDay,
   start_time: "08:00",
   steps: [{ text: "", minutes: 5 }],

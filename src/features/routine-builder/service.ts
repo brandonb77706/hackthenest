@@ -48,7 +48,17 @@ export async function createRoutine(userId: ID, input: RoutineInput): Promise<Ro
   await connectDB();
   const routineId = await mongoose.connection.transaction(async (session) => {
     const [routine] = await RoutineModel.create(
-      [{ user_id: userId, title: input.title, goal: input.goal, days: input.days, start_time: input.start_time }],
+      [
+        {
+          user_id: userId,
+          title: input.title,
+          goal: input.goal,
+          days: input.days,
+          start_time: input.start_time,
+          tone: input.tone,
+          remind: input.remind,
+        },
+      ],
       { session },
     );
     await StepModel.create(
@@ -85,7 +95,14 @@ export async function updateRoutine(
   const found = await mongoose.connection.transaction(async (session) => {
     const routine = await RoutineModel.findOneAndUpdate(
       { user_id: userId, _id: id },
-      { title: input.title, goal: input.goal, days: input.days, start_time: input.start_time },
+      {
+        title: input.title,
+        goal: input.goal,
+        days: input.days,
+        start_time: input.start_time,
+        tone: input.tone,
+        remind: input.remind,
+      },
       { session, runValidators: true },
     );
     if (!routine) return false;

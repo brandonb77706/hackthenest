@@ -1,5 +1,5 @@
 import { Schema } from "mongoose";
-import { WEEKDAYS, type Routine } from "@/lib/types";
+import { ROUTINE_TONES, WEEKDAYS, type Routine } from "@/lib/types";
 import { ownedPlugin } from "../owned";
 import { defineModel, ownerField, schemaOptions, TIME_OF_DAY, type Fields } from "../schema";
 
@@ -11,6 +11,8 @@ const fields = {
   days: { type: [{ type: String, enum: WEEKDAYS }], default: [] },
   start_time: { type: String, required: true, match: TIME_OF_DAY },
   active: { type: Boolean, default: true },
+  tone: { type: String, enum: ROUTINE_TONES, default: "teal" },
+  remind: { type: Boolean, default: true },
 } satisfies Fields<Routine>;
 
 const schema = new Schema(fields, schemaOptions);

@@ -31,6 +31,8 @@ export function draftToRoutineInput(draft: RoutineDraft, goal: string): RoutineI
     goal,
     days: draft.days ?? [...WEEKDAYS],
     start_time: draft.start_time ?? "08:00",
+    tone: "teal",
+    remind: true,
     steps: draft.steps.slice(0, LIMITS.stepsMax).map((step) => ({
       text: shorten(step.text, LIMITS.stepTextMax),
       minutes: Math.min(LIMITS.minutesMax, Math.max(LIMITS.minutesMin, Math.round(step.minutes))),

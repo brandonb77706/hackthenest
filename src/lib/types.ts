@@ -16,6 +16,10 @@ export type SupportLevel = (typeof SUPPORT_LEVELS)[number];
 export const WEEKDAYS = ["mon", "tue", "wed", "thu", "fri", "sat", "sun"] as const;
 export type Weekday = (typeof WEEKDAYS)[number];
 
+/** A routine's color on screen. Names match the design: teal = blue, sea = green. */
+export const ROUTINE_TONES = ["teal", "sea", "orange", "gold"] as const;
+export type RoutineTone = (typeof ROUTINE_TONES)[number];
+
 export interface UserProfile extends Owned {
   id: ID;
   name: string;
@@ -47,6 +51,10 @@ export interface Routine extends Owned {
   /** "08:00" */
   start_time: string;
   active: boolean;
+  /** Color on screen */
+  tone: RoutineTone;
+  /** Show check-ins for this routine */
+  remind: boolean;
 }
 
 export interface Step extends Owned {
@@ -109,6 +117,8 @@ export interface TrustedContact extends Owned, TrustedContactPermissions {
   name: string;
   method: ContactMethod;
   contact: string;
+  /** Who they are to the user, like "Your brother". Shown under their name */
+  relation: string;
 }
 
 export const REMINDER_SOURCES = ["routine", "camera"] as const;

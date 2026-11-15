@@ -10,7 +10,7 @@
 //                              BRIDGE_FUNCTION_SECRET in the Base44 app's secrets.
 
 import { createClient, type Base44Client } from "@base44/sdk";
-import type { AIProvider } from "../types";
+import type { AIProvider, ImageInput } from "../types";
 import type { ProviderConfig } from "./index";
 
 export const BASE44_FUNCTION = "invokeLLM";
@@ -40,6 +40,7 @@ async function invokeLLM(params: {
   model: string;
   response_json_schema?: object;
   files?: string[];
+  images?: ImageInput[];
 }): Promise<unknown> {
   const secret = process.env.BASE44_FUNCTION_SECRET;
   if (!secret) {
@@ -52,6 +53,8 @@ async function invokeLLM(params: {
     ...(params.model && params.model !== "default" ? { model: params.model } : {}),
     ...(params.response_json_schema ? { response_json_schema: params.response_json_schema } : {}),
     ...(params.files?.length ? { file_urls: params.files } : {}),
+    // The function stores photos privately and gives the AI a short-lived link.
+    ...(params.images?.length ? { images: params.images } : {}),
   });
   const data = (response as { data?: { result?: unknown } } | undefined)?.data;
   if (!data || !("result" in data)) throw new Error("Base44 function returned no result");
@@ -60,13 +63,13 @@ async function invokeLLM(params: {
 
 export function createBase44Provider(config: ProviderConfig): AIProvider {
   return {
-    async generateText({ prompt, files }) {
-      const result = await invokeLLM({ prompt, model: config.model, files });
+    async generateText({ prompt, files, images }) {
+      const result = await invokeLLM({ prompt, model: config.model, files, images });
       return typeof result === "string" ? result : JSON.stringify(result);
     },
 
-    async generateJSON<T>({ prompt, schema, files }: { prompt: string; schema: object; files?: string[] }) {
-      const result = await invokeLLM({ prompt, model: config.model, response_json_schema: schema, files });
+    async generateJSON<T>({ prompt, schema, files, images }: { prompt: string; schema: object; files?: string[]; images?: ImageInput[] }) {
+      const result = await invokeLLM({ prompt, model: config.model, response_json_schema: schema, files, images });
       // Usually an object. If a model returns JSON as text, read it; the feature's parser checks the shape.
       if (typeof result === "string") {
         try {

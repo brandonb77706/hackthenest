@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { parseCameraHelp } from "./cameraHelp";
+import { normalizeDate, parseCameraHelp } from "./cameraHelp";
 
 const valid = () => ({
   what_it_is: "An electric bill.",
@@ -36,6 +36,13 @@ describe("parseCameraHelp", () => {
     expect(result.ok && result.value.deadlines.map((d) => d.title)).toEqual(["Good"]);
   });
 
+  it("keeps clearly written dates that include the year, as YYYY-MM-DD", () => {
+    const raw = { ...valid(), deadlines: [{ title: "Pay", date: "Nov 28, 2026" }] };
+    expect(parseCameraHelp(raw).ok && (parseCameraHelp(raw) as { value: { deadlines: unknown } }).value.deadlines).toEqual([
+      { title: "Pay", date: "2026-11-28" },
+    ]);
+  });
+
   it("rejects malformed responses", () => {
     expect(parseCameraHelp(null).ok).toBe(false);
     expect(parseCameraHelp("text").ok).toBe(false);
@@ -51,6 +58,26 @@ describe("parseCameraHelp", () => {
       const result = parseCameraHelp(raw);
       expect(result.ok).toBe(false);
       expect(!result.ok && result.error).toContain(field);
+    }
+  });
+});
+
+describe("normalizeDate", () => {
+  it.each([
+    ["2026-11-28", "2026-11-28"],
+    ["2026-1-5", "2026-01-05"],
+    ["Nov 28, 2026", "2026-11-28"],
+    ["November 28 2026", "2026-11-28"],
+    ["Nov. 28th, 2026", "2026-11-28"],
+    ["28 November 2026", "2026-11-28"],
+    ["11/28/2026", "2026-11-28"],
+  ])("%s → %s", (input, expected) => {
+    expect(normalizeDate(input)).toBe(expected);
+  });
+
+  it("drops dates without a year, impossible dates, and words, instead of guessing", () => {
+    for (const input of ["Nov 28", "next Friday", "2026-02-30", "Smarch 3, 2026", "13/01/2026", ""]) {
+      expect(normalizeDate(input)).toBeNull();
     }
   });
 });

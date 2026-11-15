@@ -1,6 +1,8 @@
 "use client";
 
 import { useSyncExternalStore } from "react";
+import { Icon } from "@/components/bridge/Icon";
+import { iconButton } from "@/components/bridge/styles";
 import { getPlayerState, play, stop, subscribe } from "@/lib/voice/player";
 
 interface Props {
@@ -26,19 +28,13 @@ export function ReadAloudButton({ text, label = "Read aloud", className = "" }: 
   return (
     <button
       type="button"
-      className={
-        "inline-flex min-h-12 min-w-12 items-center justify-center rounded-xl border-2 border-zinc-400 bg-white px-3 " +
-        "text-lg font-semibold text-zinc-900 hover:bg-zinc-100 focus-visible:outline focus-visible:outline-4 " +
-        "focus-visible:outline-offset-2 focus-visible:outline-blue-600 disabled:opacity-60 " +
-        "dark:bg-zinc-900 dark:text-zinc-50 " +
-        className
-      }
+      className={`${iconButton} ${className}`}
       aria-label={mine ? "Stop reading" : label}
       aria-busy={mine && player.status === "loading"}
       disabled={!trimmed}
       onClick={() => (mine ? stop() : void play(trimmed))}
     >
-      <span aria-hidden="true">{mine ? (player.status === "loading" ? "…" : "■") : "🔊"}</span>
+      <Icon name={mine ? "stop" : "speaker"} size={20} strokeWidth={2.2} />
     </button>
   );
 }

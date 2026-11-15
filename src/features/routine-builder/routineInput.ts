@@ -1,7 +1,7 @@
 // What the routine editor sends to the server, and the one check both sides run.
 // The browser runs it to show messages; the server runs it again before saving.
 
-import { WEEKDAYS, type ID, type Weekday } from "@/lib/types";
+import { ROUTINE_TONES, WEEKDAYS, type ID, type RoutineTone, type Weekday } from "@/lib/types";
 
 export const LIMITS = {
   titleMax: 60,
@@ -29,6 +29,9 @@ export interface RoutineInput {
   /** "08:00" */
   start_time: string;
   steps: StepInput[];
+  tone: RoutineTone;
+  /** Show check-ins for this routine */
+  remind: boolean;
 }
 
 export interface RoutineErrors {
@@ -50,6 +53,8 @@ export function cleanRoutine(input: RoutineInput): RoutineInput {
     days: WEEKDAYS.filter((d) => input.days.includes(d)),
     start_time: input.start_time.trim(),
     steps: input.steps.map((s) => ({ ...(s.id ? { id: s.id } : {}), text: s.text.trim(), minutes: s.minutes })),
+    tone: ROUTINE_TONES.includes(input.tone) ? input.tone : "teal",
+    remind: input.remind !== false,
   };
 }
 
@@ -108,5 +113,7 @@ export function readRoutineInput(body: unknown): RoutineInput | null {
     days: b.days as Weekday[],
     start_time: b.start_time,
     steps,
+    tone: (ROUTINE_TONES as readonly unknown[]).includes(b.tone) ? (b.tone as RoutineTone) : "teal",
+    remind: b.remind !== false,
   };
 }

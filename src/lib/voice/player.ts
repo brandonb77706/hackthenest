@@ -61,11 +61,50 @@ export function subscribe(listener: () => void): () => void {
   return () => listeners.delete(listener);
 }
 
+/**
+ * Splits text into sentence-sized pieces for the browser voice. Browsers
+ * (especially Chrome's Google voices) silently stop on long text, so long
+ * text is read as a queue of short pieces instead.
+ */
+export function splitForSpeech(text: string, max = 180): string[] {
+  const clean = text.replace(/\s+/g, " ").trim();
+  if (!clean) return [];
+  // A sentence ends at . ! or ? followed by a space, so "$84.12" stays whole.
+  const sentences = clean.split(/(?<=[.!?]["')\]]*)\s+/);
+
+  // Break any sentence longer than max at commas, then at spaces.
+  const parts: string[] = [];
+  for (const sentence of sentences) {
+    let rest = sentence;
+    while (rest.length > max) {
+      const comma = rest.lastIndexOf(", ", max - 1);
+      const space = rest.lastIndexOf(" ", max);
+      const cut = comma > max / 3 ? comma + 1 : space > max / 3 ? space : max;
+      parts.push(rest.slice(0, cut).trim());
+      rest = rest.slice(cut).trim();
+    }
+    if (rest) parts.push(rest);
+  }
+
+  // Pack sentences back together up to max, so short bits like "1." don't make odd pauses.
+  const pieces: string[] = [];
+  for (const part of parts) {
+    const last = pieces[pieces.length - 1];
+    if (last && last.length + 1 + part.length <= max) pieces[pieces.length - 1] = `${last} ${part}`;
+    else pieces.push(part);
+  }
+  return pieces;
+}
+
 export function stop(): void {
   playId++;
   audio?.pause();
   audio = null;
-  if (typeof window !== "undefined" && "speechSynthesis" in window) window.speechSynthesis.cancel();
+  if (typeof window !== "undefined" && "speechSynthesis" in window) {
+    const synth = window.speechSynthesis;
+    // Only cancel when something is queued: Chrome can drop speech that starts right after a cancel.
+    if (synth.speaking || synth.pending) synth.cancel();
+  }
   setState({ status: "idle", text: null });
 }
 
@@ -92,20 +131,35 @@ function speakWithBrowser(text: string, id: number): void {
     setState({ status: "idle", text: null });
     return;
   }
-  const utterance = new SpeechSynthesisUtterance(text);
-  utterance.rate = FALLBACK_RATE;
-  const voice = pickBrowserVoice(window.speechSynthesis.getVoices?.() ?? []);
-  if (voice) {
-    utterance.voice = voice;
-    utterance.lang = voice.lang;
+  const synth = window.speechSynthesis;
+  const voice = pickBrowserVoice(synth.getVoices?.() ?? []);
+  const pieces = splitForSpeech(text);
+  if (pieces.length === 0) {
+    setState({ status: "idle", text: null });
+    return;
   }
   const done = () => {
     if (id === playId) setState({ status: "idle", text: null });
   };
-  utterance.onend = done;
-  utterance.onerror = done;
   setState({ status: "playing", text });
-  window.speechSynthesis.speak(utterance);
+  // Chrome sometimes leaves speech paused; resume before queueing.
+  synth.resume?.();
+  pieces.forEach((piece, i) => {
+    const utterance = new SpeechSynthesisUtterance(piece);
+    utterance.rate = FALLBACK_RATE;
+    if (voice) {
+      utterance.voice = voice;
+      utterance.lang = voice.lang;
+    }
+    if (i === pieces.length - 1) utterance.onend = done;
+    utterance.onerror = (event) => {
+      // "interrupted"/"canceled" happen when the person taps stop or plays something else.
+      const reason = (event as SpeechSynthesisErrorEvent).error;
+      if (reason !== "interrupted" && reason !== "canceled") console.warn("[voice] browser speech failed:", reason);
+      done();
+    };
+    synth.speak(utterance);
+  });
 }
 
 /** Reads the text aloud. Stops anything already playing. */

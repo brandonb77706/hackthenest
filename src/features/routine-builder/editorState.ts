@@ -1,6 +1,6 @@
 // The routine editor's state changes, kept out of the component so they're easy to test.
 
-import { WEEKDAYS, type Weekday } from "@/lib/types";
+import { WEEKDAYS, type RoutineTone, type Weekday } from "@/lib/types";
 import { LIMITS, type RoutineInput, type StepInput } from "./routineInput";
 
 /** Each step gets a stable key so React keeps focus and screen reader position when steps move. */
@@ -21,7 +21,13 @@ export type EditorAction =
   | { type: "moveStep"; index: number; direction: "up" | "down" }
   | { type: "toggleDay"; day: Weekday }
   | { type: "setEveryDay"; on: boolean }
-  | { type: "setTime"; time: string };
+  | { type: "setTime"; time: string }
+  | { type: "setTone"; tone: RoutineTone }
+  | { type: "setRemind"; on: boolean }
+  /** Start over from a whole routine: a template, an AI draft, or a blank one. */
+  | { type: "load"; routine: RoutineInput }
+  /** Replace the name and steps, e.g. after "Smaller steps". Keeps days, time, and color. */
+  | { type: "replaceSteps"; title: string; steps: StepInput[] };
 
 let nextKey = 0;
 const newKey = () => `step-${++nextKey}`;
@@ -73,5 +79,13 @@ export function editorReducer(state: EditorState, action: EditorAction): EditorS
       return { ...state, days: action.on ? [...WEEKDAYS] : [] };
     case "setTime":
       return { ...state, start_time: action.time };
+    case "setTone":
+      return { ...state, tone: action.tone };
+    case "setRemind":
+      return { ...state, remind: action.on };
+    case "load":
+      return toEditorState(action.routine);
+    case "replaceSteps":
+      return { ...state, title: action.title, steps: action.steps.map((s) => ({ ...s, key: newKey() })) };
   }
 }

@@ -13,7 +13,7 @@ import type { ProviderName } from "./types";
  */
 export const AI_CONFIG = {
   routineBuilder: { provider: "base44", model: "default" },
-  cameraHelp: { provider: "mock", model: "mock" },
+  cameraHelp: { provider: "base44", model: "default" },
   stuckHelp: { provider: "mock", model: "mock" },
   speakForMe: { provider: "mock", model: "mock" },
 } as const satisfies Record<string, { provider: ProviderName; model: string }>;

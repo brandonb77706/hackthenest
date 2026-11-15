@@ -32,6 +32,7 @@ Bridge is a hackathon app (track: "Best use of Base44 AI", community vote). It g
 src/
   app/                  routes (one folder per screen)
   components/           shared UI (accessible buttons, cards, layout)
+  components/bridge/    the design: icons, Buddy, tab bar, switch, shared styles
   features/<feature>/   feature logic, components, and tests together
   lib/ai/               AI layer: providers, model config, prompts
   lib/db/               MongoDB: connection, models, current user
@@ -39,7 +40,7 @@ src/
 docs/                   project docs
 ```
 
-1. **Feature folders.** Each owner's work lives in `src/features/<feature>/` (`routine-builder`, `step-player`, `camera-help`, `help`, `notifications`, `rewards`). Keep its components, logic, and tests there.
+1. **Feature folders.** Each owner's work lives in `src/features/<feature>/` (`home`, `routine-builder`, `step-player`, `camera-help`, `help`, `notifications`, `rewards`). Keep its components, logic, and tests there.
 2. **Logic separate from UI.** Put rules (streak math, token awards, routine validation, independence score) in plain TypeScript functions, not inside components, so they're easy to unit test.
 3. **Server vs client.** Anything holding a secret (AI provider keys, ElevenLabs) runs server-side: route handlers in `src/app/api/` or backend functions. Never put a secret in a `NEXT_PUBLIC_` variable or a Client Component.
 4. **Types first.** Shared types (Routine, Step, CheckIn, etc.) live in `src/lib/types.ts` and match `docs/data-model.md` and the models in `src/lib/db/models/`.
