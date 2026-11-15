@@ -18,6 +18,12 @@ interface Props {
 
 export function GuardianControls({ linkId, name, initial }: Props) {
   const [values, setValues] = useState(initial);
+  // The page stays alive across tabs; take fresh values when the server sends them.
+  const [seen, setSeen] = useState(initial);
+  if (initial !== seen) {
+    setSeen(initial);
+    setValues(initial);
+  }
   const [error, setError] = useState<string | null>(null);
 
   async function change(key: Key, on: boolean) {

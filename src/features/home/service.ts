@@ -14,6 +14,7 @@ import {
 import { getEditRules } from "@/features/guardians/service";
 import type { EditRules } from "@/features/guardians/editRules";
 import { settingsOf, type MeSettings } from "@/features/me/service";
+import { liveStreak } from "@/features/rewards/streak";
 import { localNow } from "@/lib/time";
 import type { Avatar, CheckIn, ID, Routine, Step, UserProfile } from "@/lib/types";
 import { summarizeDay, type TodayRoutine } from "./today";
@@ -62,7 +63,8 @@ export async function getToday(userId: ID, timeZone: string, at = new Date()): P
 
   return {
     name: profile?.name ?? "",
-    streak: profile?.current_streak ?? 0,
+    // A streak not kept up yesterday shows as 0, not the old number.
+    streak: profileRecord ? liveStreak(profileRecord, now.date) : 0,
     settings: settingsOf(profileRecord, buddyDoc ? toRecord<Avatar>(buddyDoc).name : null),
     tokens: tokenSum[0]?.total ?? 0,
     edit,

@@ -59,7 +59,41 @@ export function BadgesCard({ badges, nextReward, onOpen }: { badges: BadgeStatus
 }
 
 /** The full screen: tokens, next reward, and every badge. */
-export function RewardsView({ tokens, nextReward, badges }: { tokens: number; nextReward: NextReward | null; badges: BadgeStatus[] }) {
+/** A label, a progress bar, and a line under it: the next reward and the streak. */
+function ProgressCard({ id, progress, icon }: { id: string; progress: NextReward; icon?: "flame" }) {
+  return (
+    <div className={`${br.card} flex flex-col gap-2 rounded-[20px] p-4`}>
+      <span id={id} className="flex items-center gap-2 font-display text-[18px] font-semibold">
+        {icon && <Icon name={icon} size={22} strokeWidth={2.2} className="text-danger" />}
+        {progress.label}
+      </span>
+      <div
+        role="progressbar"
+        aria-labelledby={id}
+        aria-valuemin={0}
+        aria-valuemax={100}
+        aria-valuenow={progress.percent}
+        className="h-3 overflow-hidden rounded-full bg-sunken"
+      >
+        <div className="h-full rounded-full bg-switch-on" style={{ width: `${progress.percent}%` }} />
+      </div>
+      <span className="text-[15px] text-ink2">{progress.detail}</span>
+    </div>
+  );
+}
+
+export function RewardsView({
+  tokens,
+  nextReward,
+  badges,
+  streak,
+}: {
+  tokens: number;
+  nextReward: NextReward | null;
+  badges: BadgeStatus[];
+  /** The streak and the next streak reward */
+  streak?: NextReward;
+}) {
   const [openId, setOpenId] = useState<string | null>(null);
   const open = badges.find((b) => b.id === openId);
 
@@ -72,24 +106,8 @@ export function RewardsView({ tokens, nextReward, badges }: { tokens: number; ne
           <span className="text-[15px] text-ink2">You earn tokens when you finish steps and routines.</span>
         </div>
       </div>
-      {nextReward && (
-        <div className={`${br.card} flex flex-col gap-2 rounded-[20px] p-4`}>
-          <span id="next-reward-label" className="font-display text-[18px] font-semibold">
-            {nextReward.label}
-          </span>
-          <div
-            role="progressbar"
-            aria-labelledby="next-reward-label"
-            aria-valuemin={0}
-            aria-valuemax={100}
-            aria-valuenow={nextReward.percent}
-            className="h-3 overflow-hidden rounded-full bg-sunken"
-          >
-            <div className="h-full rounded-full bg-switch-on" style={{ width: `${nextReward.percent}%` }} />
-          </div>
-          <span className="text-[15px] text-ink2">{nextReward.detail}</span>
-        </div>
-      )}
+      {nextReward && <ProgressCard id="next-reward-label" progress={nextReward} />}
+      {streak && <ProgressCard id="streak-label" progress={streak} icon="flame" />}
 
       <h2 className={`${br.h2} mt-1.5 text-[22px]`}>Badges · {badgeCount(badges)}</h2>
       <p className="m-0 -mt-1.5 text-[16px] text-ink2">Tap a badge to see when you earned it.</p>

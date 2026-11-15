@@ -273,4 +273,15 @@ describe("Me", () => {
     expect(await within(screen.getByRole("dialog")).findByRole("alert")).toHaveTextContent("You need 10 more tokens");
     expect(screen.getByText("You have 150 tokens.")).toBeInTheDocument();
   });
+
+  it("shows fresh tokens when new data arrives while the screen stays open (tab switches)", async () => {
+    const user = userEvent.setup();
+    const { rerender } = render(<MeScreen data={data()} />);
+    expect(screen.getByText("25 tokens · Buddy: Fox")).toBeInTheDocument();
+    // Coming back to Me after finishing a routine: Next.js keeps the screen and passes new data.
+    rerender(<MeScreen data={data({ summary: { name: "Jordan", tokens: 105, buddyName: "Fox", nextReward: null } })} />);
+    expect(screen.getByText("105 tokens · Buddy: Fox")).toBeInTheDocument();
+    await user.click(screen.getByRole("button", { name: "Change Buddy" }));
+    expect(screen.getByText("You have 105 tokens.")).toBeInTheDocument();
+  });
 });

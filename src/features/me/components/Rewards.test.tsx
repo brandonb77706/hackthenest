@@ -62,4 +62,11 @@ describe("RewardsView", () => {
     expect(within(dialog).getByText("Not earned yet")).toBeInTheDocument();
     expect(within(dialog).getByText("So far: 1 of 5 mornings.")).toBeInTheDocument();
   });
+
+  it("shows the streak and the next streak reward", () => {
+    const streak = { label: "Streak: 4 days", percent: 57, detail: "3 more days to get 50 tokens and Turtle." };
+    render(<RewardsView tokens={0} nextReward={null} badges={badges} streak={streak} />);
+    expect(screen.getByRole("progressbar", { name: "Streak: 4 days" })).toHaveAttribute("aria-valuenow", "57");
+    expect(screen.getByText("3 more days to get 50 tokens and Turtle.")).toBeInTheDocument();
+  });
 });

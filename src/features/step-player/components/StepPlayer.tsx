@@ -8,10 +8,11 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
-import { Icon } from "@/components/bridge/Icon";
+import { CoinIcon, Icon } from "@/components/bridge/Icon";
 import { br } from "@/components/bridge/styles";
 import { formatStepCount } from "@/features/routine-builder/format";
 import type { RoutineWithSteps } from "@/features/routine-builder/service";
+import type { StepDoneResponse } from "@/features/rewards/stepDone";
 import { play, stop } from "@/lib/voice/player";
 import { stepIcon } from "../stepIcon";
 
@@ -69,7 +70,11 @@ export function StepPlayer({ routineId, walkthrough, onExit, startStep = 1 }: Pr
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
   const startedAt = useRef(0);
+  /** Same as earned.tokens, readable right after the last save */
+  const totalEarned = useRef(0);
   const gotHelp = useRef(new Set<string>());
+  /** Tokens, streak and Buddies earned on this run, from the server */
+  const [earned, setEarned] = useState({ tokens: 0, streak: null as number | null, unlocked: [] as string[] });
 
   useEffect(() => {
     if (walkthrough) {
@@ -140,12 +145,23 @@ export function StepPlayer({ routineId, walkthrough, onExit, startStep = 1 }: Pr
     if (saves) {
       setSaving(true);
       try {
-        const response = await fetch(`/api/routines/${routine.id}/steps/${step.id}/done`, {
+        // The time zone makes "once a day" mean the person's own day.
+        const tz = Intl.DateTimeFormat().resolvedOptions().timeZone || "UTC";
+        const response = await fetch(`/api/routines/${routine.id}/steps/${step.id}/done?tz=${encodeURIComponent(tz)}`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ used_help: gotHelp.current.has(step.id) }),
         });
         if (!response.ok) throw new Error(String(response.status));
+        const result = (await response.json().catch(() => null)) as Partial<StepDoneResponse> | null;
+        if (result) {
+          setEarned((e) => ({
+            tokens: e.tokens + (result.earned ?? 0),
+            streak: result.streak ?? e.streak,
+            unlocked: [...e.unlocked, ...(result.unlocked ?? [])],
+          }));
+          totalEarned.current += result.earned ?? 0;
+        }
       } catch {
         setSaving(false);
         setError("Couldn't save that step. Check your internet and tap Done again.");
@@ -159,7 +175,8 @@ export function StepPlayer({ routineId, walkthrough, onExit, startStep = 1 }: Pr
     }
     const minutes = Math.max(1, Math.round((Date.now() - startedAt.current) / 60000));
     setFinishedMinutes(minutes);
-    void play(`${routine.title} done. Nice work.`);
+    const tokens = totalEarned.current;
+    void play(`${routine.title} done. Nice work.${tokens > 0 ? ` You earned ${tokens} tokens.` : ""}`);
   }
 
   function needHelp() {
@@ -207,7 +224,7 @@ export function StepPlayer({ routineId, walkthrough, onExit, startStep = 1 }: Pr
               <Icon name="check" size={68} strokeWidth={3} />
             </div>
             <h1 className="m-0 font-display text-[32px] font-bold leading-[1.15]">{routine.title} done</h1>
-            <div className="grid w-full grid-cols-2 gap-2.5">
+            <div className={`grid w-full gap-2.5 ${saves ? "grid-cols-3" : "grid-cols-2"}`}>
               <div className={`${br.card} flex flex-col gap-0.5 rounded-2xl px-1.5 py-3.5`}>
                 <span className="font-display text-[26px] font-bold">{total}</span>
                 <span className="text-[15px] text-ink2">{total === 1 ? "step" : "steps"}</span>
@@ -216,7 +233,26 @@ export function StepPlayer({ routineId, walkthrough, onExit, startStep = 1 }: Pr
                 <span className="font-display text-[26px] font-bold">{finishedMinutes}</span>
                 <span className="text-[15px] text-ink2">{finishedMinutes === 1 ? "minute" : "minutes"}</span>
               </div>
+              {saves && (
+                <div className={`${br.card} flex flex-col items-center gap-0.5 rounded-2xl px-1.5 py-3.5`}>
+                  <span className="flex items-center gap-1 font-display text-[26px] font-bold">
+                    <CoinIcon size={22} />+{earned.tokens}
+                  </span>
+                  <span className="text-[15px] text-ink2">tokens</span>
+                </div>
+              )}
             </div>
+            {saves && earned.tokens === 0 && (
+              <p className="m-0 text-[17px] text-ink2">You already did this one today. Doing it again is great practice.</p>
+            )}
+            {earned.streak !== null && earned.streak > 1 && (
+              <p className="m-0 rounded-2xl bg-go-soft px-4 py-3 text-[17px] font-bold">{earned.streak}-day streak. Keep it going!</p>
+            )}
+            {earned.unlocked.map((name) => (
+              <p key={name} role="status" className="m-0 rounded-2xl bg-primary-soft px-4 py-3 text-[17px] font-bold">
+                You unlocked {name}! Pick it on the Me tab.
+              </p>
+            ))}
           </div>
           <div className="border-t-2 border-line px-4 pb-7 pt-[18px]">
             {onExit ? (

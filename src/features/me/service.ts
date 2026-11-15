@@ -19,7 +19,10 @@ import {
 import { DEFAULT_COLOR_SCHEME, isColorScheme, type ColorSchemeId } from "@/lib/theme";
 import type { Avatar, CheckIn, ID, Routine, Step, TrustedContact, UserAvatar, UserProfile } from "@/lib/types";
 import { earnBadges, type BadgeFacts, type BadgeStatus } from "./badges";
-import { buddyChoices, nextReward, type BuddyChoice, type MeSummary } from "./summary";
+import { liveStreak } from "@/features/rewards/streak";
+import { streakProgress } from "@/features/rewards/streakProgress";
+import { localNow } from "@/lib/time";
+import { buddyChoices, nextReward, type BuddyChoice, type MeSummary, type NextReward } from "./summary";
 
 export interface MeSettings {
   color_scheme: ColorSchemeId;
@@ -37,6 +40,8 @@ export interface MeData {
   edit?: EditRules;
   /** Every badge, earned or not */
   badges?: BadgeStatus[];
+  /** The streak and the next streak reward, shown like the next reward */
+  streak?: NextReward;
 }
 
 /** "YYYY-MM-DD" a record was made, from its MongoDB id. */
@@ -107,6 +112,12 @@ export async function getMe(userId: ID): Promise<MeData> {
   const ownedIds = owned.map((o) => o.avatar_id);
   const buddy = catalog.find((a) => a.id === profile?.equipped_avatar_id) ?? null;
   const tokens = totals[0]?.total ?? 0;
+  // Server time zone is UTC here; a day off at most for the "still going" check.
+  const streakDays = profile ? liveStreak(profile, localNow(new Date(), "UTC").date) : 0;
+  const streak = streakProgress(streakDays, {
+    freezes: profile?.streak_freezes ?? 0,
+    streakBuddies: catalog.filter((a) => a.unlock_type === "streak"),
+  });
   const badges = earnBadges(await badgeFacts(userId, profile, tokens, owned));
 
   return {
@@ -125,6 +136,7 @@ export async function getMe(userId: ID): Promise<MeData> {
     settings: settingsOf(profile, buddy?.name ?? null),
     edit,
     badges,
+    streak,
   };
 }
 

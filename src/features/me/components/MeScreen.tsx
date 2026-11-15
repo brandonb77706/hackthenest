@@ -80,6 +80,21 @@ export function MeScreen({ data }: { data: MeData }) {
   const [buying, setBuying] = useState<BuddyChoice | null>(null);
   const [buyBusy, setBuyBusy] = useState(false);
   const [bought, setBought] = useState<string | null>(null);
+
+  // Next.js keeps this screen alive when you switch tabs, so new server data
+  // (like tokens from a routine you just finished) arrives as new props while
+  // the state above still holds the old copy. Take the new data when it comes.
+  const [seen, setSeen] = useState(data);
+  if (data !== seen) {
+    setSeen(data);
+    setTokens(data.summary.tokens);
+    setBuddies(data.buddies);
+    setBuddyName(data.summary.buddyName);
+    setContacts(data.contacts);
+    setScheme(data.settings.color_scheme);
+    setShowBuddy(data.settings.show_buddy);
+    setBought(null);
+  }
   const nextReward =
     tokens === data.summary.tokens
       ? data.summary.nextReward
@@ -302,7 +317,7 @@ export function MeScreen({ data }: { data: MeData }) {
         </div>
         {errorLine}
 
-        {view.kind === "rewards" && <RewardsView tokens={tokens} nextReward={nextReward} badges={data.badges ?? []} />}
+        {view.kind === "rewards" && <RewardsView tokens={tokens} nextReward={nextReward} badges={data.badges ?? []} streak={data.streak} />}
 
         {view.kind === "buddy" && (
           <>

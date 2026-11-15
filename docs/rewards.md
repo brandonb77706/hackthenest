@@ -30,6 +30,10 @@ A "streak day" = at least one routine finished that day.
 
 Code: `src/features/rewards/` (`earning.ts` amounts, `stepAwards.ts` the rules above, `service.ts` saves the tokens).
 
+**Streaks.** Finishing the first routine of the day moves the streak (`streak.ts`, `streakService.ts`): one more day after yesterday, a saved freeze covers one missed day, otherwise it starts again at 1. Reaching 3, 7, 14 or 30 days pays the bonus once, and a streak Buddy (Turtle at 7, Bunny at 14) is given when its streak is reached. A broken streak never takes anything away. The step player shows the tokens earned on the results screen; the Done route answers with them.
+
+**Buying.** Shop Buddies are bought on Me (`shop.ts`, `shopService.ts`). One transaction checks the balance, writes the negative `purchase` transaction and the UserAvatar, and puts the Buddy on.
+
 ## Avatars
 
 | Type | How you get it | Examples |
