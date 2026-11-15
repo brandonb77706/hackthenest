@@ -36,10 +36,9 @@ export const schemaOptions = {
   toObject: { virtuals: false, transform: toPlain },
 } satisfies SchemaOptions;
 
-/** Registers a model once, and replaces it on dev reloads so schema edits take effect. */
+/** Replace the schema without deleting the shared collection during a dev reload. */
 export function defineModel<TSchema extends Schema>(name: string, schema: TSchema) {
-  if (mongoose.models[name]) mongoose.deleteModel(name);
-  return mongoose.model(name, schema);
+  return mongoose.model(name, schema, undefined, { overwriteModels: true });
 }
 
 /** Converts a document to its type from src/lib/types.ts, e.g. toRecord<Routine>(doc). */

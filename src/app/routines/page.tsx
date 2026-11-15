@@ -5,6 +5,7 @@ import { RoutineList } from "@/features/routine-builder/components/RoutineList";
 import { listRoutines } from "@/features/routine-builder/service";
 import { ui } from "@/features/routine-builder/ui";
 import { getCurrentUserId } from "@/lib/db";
+import { RoutineReminderMonitor } from "@/features/notifications/RoutineReminderMonitor";
 
 export default function RoutinesPage() {
   return (
@@ -13,6 +14,7 @@ export default function RoutinesPage() {
       <Link href="/routines/new" className={ui.primary}>
         + New routine
       </Link>
+      <RoutineReminderMonitor />
       <Suspense fallback={<p>Loading your routines…</p>}>
         <Routines />
       </Suspense>
