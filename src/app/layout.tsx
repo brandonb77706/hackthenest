@@ -18,7 +18,7 @@ const lexend = Lexend({
 
 export const metadata: Metadata = {
   title: "Bridge",
-  description: "Support for daily routines, paperwork, and getting help.",
+  description: "Helping you do more on your own. Support for daily routines, paperwork, and getting help.",
 };
 
 export const viewport: Viewport = {

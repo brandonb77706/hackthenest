@@ -48,4 +48,11 @@ describe("TabBar", () => {
     expect(screen.queryByRole("status")).not.toBeInTheDocument();
     expect(stop).toHaveBeenCalled();
   });
+
+  it("on a tab with no tip, the Buddy is just a picture", () => {
+    pathname = "/me";
+    render(<TabBar />);
+    expect(screen.queryByRole("button", { name: /your Buddy/ })).not.toBeInTheDocument();
+    expect(play).not.toHaveBeenCalled();
+  });
 });

@@ -54,6 +54,8 @@ export function LoginScreen({ google }: { google: boolean }) {
     setBusy(true);
     const result = await authClient.signIn.social({
       provider: "google",
+      // A new Google account gets the side picked here; the server reads it once, at sign-up.
+      additionalData: { role },
       callbackURL: next ?? homeFor(role),
       errorCallbackURL: "/login",
     });
@@ -89,7 +91,7 @@ export function LoginScreen({ google }: { google: boolean }) {
           aria-label="Who is signing in"
           className="grid grid-cols-2 gap-1.5 rounded-[18px] bg-white/55 p-1.5"
         >
-          {tab("user", "User")}
+          {tab("user", "For me")}
           {tab("guardian", "Parent / guardian")}
         </div>
         <div className="flex items-end justify-between gap-2 px-2">

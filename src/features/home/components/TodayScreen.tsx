@@ -35,7 +35,9 @@ export function TodayScreen() {
         <h1 className="m-0 font-display text-[32px] font-bold leading-[1.05]">
           {loading
             ? "Loading your day…"
-            : `${doneCount} of ${todays.length} done today`}
+            : todays.length === 0
+              ? "Your day is open"
+              : `${doneCount} of ${todays.length} done today`}
         </h1>
         {todays.length > 0 && (
           <div className="flex gap-2" aria-hidden="true">

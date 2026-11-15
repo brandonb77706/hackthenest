@@ -9,7 +9,8 @@ import { betterAuth } from "better-auth";
 import { mongodbAdapter } from "better-auth/adapters/mongodb";
 import { nextCookies } from "better-auth/next-js";
 import { MongoClient } from "mongodb";
-import { toRole } from "./roles";
+import { getOAuthState } from "better-auth/api";
+import { signUpRole } from "./roles";
 import { ipHeaders, SIGN_IN_LIMITS } from "./limits";
 import { authUrls } from "./siteUrl";
 
@@ -22,7 +23,13 @@ function createAuth() {
 
   const google =
     process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET
-      ? { clientId: process.env.GOOGLE_CLIENT_ID, clientSecret: process.env.GOOGLE_CLIENT_SECRET }
+      ? {
+          clientId: process.env.GOOGLE_CLIENT_ID,
+          clientSecret: process.env.GOOGLE_CLIENT_SECRET,
+          // Always show Google's account picker, so a shared phone or a second
+          // account doesn't get signed in by itself.
+          prompt: "select_account" as const,
+        }
       : undefined;
 
   // Which addresses login trusts: BETTER_AUTH_URL, Vercel's own addresses, or dev ones.
@@ -54,8 +61,12 @@ function createAuth() {
     databaseHooks: {
       user: {
         create: {
-          // Only "user" or "guardian", whatever the sign-up form sent.
-          before: async (user) => ({ data: { ...user, role: toRole(user.role) } }),
+          // Only "user" or "guardian", whatever the sign-up form sent. A Google
+          // sign-up carries the side picked on the login page in its OAuth state.
+          before: async (user) => {
+            const oauth = await getOAuthState<{ role?: unknown }>();
+            return { data: { ...user, role: signUpRole(user.role, oauth?.role) } };
+          },
         },
       },
     },

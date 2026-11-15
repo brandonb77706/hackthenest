@@ -94,6 +94,8 @@ describe("TodayScreen", () => {
     serve({ routines: [] });
     render(<TodayScreen />);
     expect(await screen.findByText(/Nothing is planned for today/)).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "Your day is open" })).toBeInTheDocument();
+    expect(screen.queryByText("0 of 0 done today")).not.toBeInTheDocument();
     expect(screen.getByRole("link", { name: "Make a new routine" })).toHaveAttribute("href", "/routines/new");
   });
 

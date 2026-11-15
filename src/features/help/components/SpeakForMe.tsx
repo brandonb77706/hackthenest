@@ -115,7 +115,7 @@ export function SpeakForMe({ phrases, onPhrasesChange }: Props) {
           className={`${br.cta} flex h-[58px] flex-[2] items-center justify-center gap-2 rounded-2xl text-[20px]`}
         >
           <Icon name="speakerLoud" size={24} strokeWidth={2.2} />
-          Say it
+          Read it out loud
         </button>
         <button
           type="button"
