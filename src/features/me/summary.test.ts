@@ -8,10 +8,10 @@ const shop = [
 ];
 
 describe("formatTokens", () => {
-  it("uses the singular for exactly one token", () => {
-    expect(formatTokens(1)).toBe("1 token");
-    expect(formatTokens(0)).toBe("0 tokens");
-    expect(formatTokens(25)).toBe("25 tokens");
+  it("uses the singular for exactly one coin", () => {
+    expect(formatTokens(1)).toBe("1 coin");
+    expect(formatTokens(0)).toBe("0 coins");
+    expect(formatTokens(25)).toBe("25 coins");
   });
 });
 
@@ -20,7 +20,7 @@ describe("nextReward", () => {
     expect(nextReward(25, shop, [])).toEqual({
       label: "Next reward: Astronaut cat",
       percent: 25,
-      detail: "75 tokens more to get Astronaut cat.",
+      detail: "75 coins more to get Astronaut cat.",
     });
   });
 
@@ -28,16 +28,16 @@ describe("nextReward", () => {
     expect(nextReward(0, shop, ["cat"])?.label).toBe("Next reward: Chef bear");
   });
 
-  it("says so when the user has enough tokens, and never goes past 100%", () => {
+  it("says so when the user has enough coins, and never goes past 100%", () => {
     expect(nextReward(120, shop, [])).toEqual({
       label: "Next reward: Astronaut cat",
       percent: 100,
-      detail: "You have enough tokens for Astronaut cat.",
+      detail: "You have enough coins for Astronaut cat.",
     });
   });
 
-  it("uses the singular when one token is missing", () => {
-    expect(nextReward(99, shop, [])?.detail).toBe("1 token more to get Astronaut cat.");
+  it("uses the singular when one coin is missing", () => {
+    expect(nextReward(99, shop, [])?.detail).toBe("1 coin more to get Astronaut cat.");
   });
 
   it("returns null when there is nothing left in the shop", () => {
@@ -86,7 +86,7 @@ describe("buddyTag", () => {
   it("says what each card means", () => {
     expect(buddyTag(fox)).toBe("Your Buddy");
     expect(buddyTag(robot)).toBe("Choose");
-    expect(buddyTag(cat)).toBe("100 tokens");
+    expect(buddyTag(cat)).toBe("100 coins");
     expect(buddyTag(star)).toBe("7-day streak");
   });
 });

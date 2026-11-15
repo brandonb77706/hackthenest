@@ -5,9 +5,18 @@ import { GroceryShopping } from "./GroceryShopping";
 import type { GroceryCatalog } from "./catalog";
 
 vi.mock("@/components/ReadAloudButton", () => ({ ReadAloudButton: ({ label }: { label: string }) => <button>{label}</button> }));
+it("asks permission and searches stores around the device coordinates", async () => {
+  const user = userEvent.setup();
+  const storesNear = vi.fn().mockResolvedValue([{ locationId: "near", name: "Nearby store" }]);
+  Object.defineProperty(navigator, "geolocation", { configurable: true, value: { getCurrentPosition: (success: PositionCallback) => success({ coords: { latitude: 42.2, longitude: -83.6 } as GeolocationCoordinates } as GeolocationPosition) } });
+  render(<GroceryShopping catalog={{ stores: async () => [], storesNear, search: async () => [] }} />);
+  await user.click(screen.getByRole("button", { name: "Use my precise location" }));
+  expect(await screen.findByRole("option", { name: "Nearby store" })).toBeInTheDocument();
+  expect(storesNear).toHaveBeenCalledWith(42.2, -83.6);
+});
 it("selects a store, searches, adds and removes a product with accessible labels", async () => {
   const user = userEvent.setup();
-  const catalog: GroceryCatalog = { stores: async () => [{ locationId: "123", name: "Demo" }], search: vi.fn().mockResolvedValue([{ id: "1", name: "Bread", availability: "unknown", aisle: null }]) };
+  const catalog: GroceryCatalog = { stores: async () => [{ locationId: "123", name: "Demo" }], storesNear: async () => [], search: vi.fn().mockResolvedValue([{ id: "1", name: "Bread", availability: "unknown", aisle: null }]) };
   render(<GroceryShopping catalog={catalog} />);
   await user.type(screen.getByLabelText("ZIP code"), "48197");
   await user.click(screen.getByRole("button", { name: "Find stores" }));
@@ -44,7 +53,7 @@ it("selects a store, searches, adds and removes a product with accessible labels
 });
 it("clears the list when switching stores and reports a failed search", async () => {
   const user = userEvent.setup();
-  const catalog: GroceryCatalog = { stores: async () => [{ locationId: "1", name: "One" }, { locationId: "2", name: "Two" }], search: vi.fn().mockResolvedValueOnce([{ id: "x", name: "Milk", availability: "unavailable", aisle: null }]).mockRejectedValueOnce(new Error("offline")) };
+  const catalog: GroceryCatalog = { stores: async () => [{ locationId: "1", name: "One" }, { locationId: "2", name: "Two" }], storesNear: async () => [], search: vi.fn().mockResolvedValueOnce([{ id: "x", name: "Milk", availability: "unavailable", aisle: null }]).mockRejectedValueOnce(new Error("offline")) };
   render(<GroceryShopping catalog={catalog} />);
   await user.type(screen.getByLabelText("ZIP code"), "48197");
   await user.click(screen.getByRole("button", { name: "Find stores" }));

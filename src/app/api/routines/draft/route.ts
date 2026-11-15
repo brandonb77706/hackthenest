@@ -1,4 +1,6 @@
 import { draftRoutine } from "@/features/routine-builder/aiDraft";
+import { geminiDraftProvider } from "@/features/routine-builder/geminiDraftProvider";
+import { activeProvider } from "@/lib/ai";
 import { cleanGoal } from "@/features/routine-builder/supportLevel";
 import { connectDB, getCurrentUserId, UserProfileModel } from "@/lib/db";
 import { SUPPORT_LEVELS, type SupportLevel } from "@/lib/types";
@@ -28,7 +30,11 @@ export async function POST(request: Request) {
   if (!goal) return Response.json({ error: "Tell me what you need first." }, { status: 400 });
 
   const supportLevel = isSupportLevel(body?.supportLevel) ? body.supportLevel : await savedSupportLevel();
-  const result = await draftRoutine(goal, supportLevel);
+  const useGemini = activeProvider("routineBuilder") === "mock";
+  if (useGemini && !process.env.GEMINI_API_KEY) {
+    return Response.json({ error: "Routine drafting isn't set up yet. You can build it yourself." }, { status: 503 });
+  }
+  const result = useGemini ? await draftRoutine(goal, supportLevel, geminiDraftProvider()) : await draftRoutine(goal, supportLevel);
 
   if (!result.ok) {
     return Response.json({ error: "I couldn't make steps for that.", reason: result.reason }, { status: 502 });

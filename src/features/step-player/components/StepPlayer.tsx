@@ -77,6 +77,7 @@ export function StepPlayer({ routineId, walkthrough, onExit, startStep = 1 }: Pr
   const gotHelp = useRef(new Set<string>());
   /** Tokens, streak and Buddies earned on this run, from the server */
   const [earned, setEarned] = useState({ tokens: 0, streak: null as number | null, unlocked: [] as string[], challenges: [] as ChallengeStatus[] });
+  const [notice, setNotice] = useState<ChallengeStatus[]>([]);
 
   useEffect(() => {
     if (walkthrough) {
@@ -157,6 +158,7 @@ export function StepPlayer({ routineId, walkthrough, onExit, startStep = 1 }: Pr
         if (!response.ok) throw new Error(String(response.status));
         const result = (await response.json().catch(() => null)) as Partial<StepDoneResponse> | null;
         if (result) {
+          if (result.challenges?.length) setNotice(result.challenges);
           setEarned((e) => ({
             tokens: e.tokens + (result.earned ?? 0),
             streak: result.streak ?? e.streak,
@@ -179,7 +181,7 @@ export function StepPlayer({ routineId, walkthrough, onExit, startStep = 1 }: Pr
     const minutes = Math.max(1, Math.round((Date.now() - startedAt.current) / 60000));
     setFinishedMinutes(minutes);
     const tokens = totalEarned.current;
-    void play(`${routine.title} done. Nice work.${tokens > 0 ? ` You earned ${tokens} tokens.` : ""}`);
+    void play(`${routine.title} done. Nice work.${tokens > 0 ? ` You earned ${tokens} coins.` : ""}`);
   }
 
   function needHelp() {
@@ -190,6 +192,10 @@ export function StepPlayer({ routineId, walkthrough, onExit, startStep = 1 }: Pr
 
   return (
     <div className={`tone-${routine.tone} flex min-h-dvh flex-col bg-canvas`}>
+      {notice.length > 0 && <div role="status" aria-live="polite" className="fixed inset-x-4 top-5 z-50 mx-auto max-w-[448px] rounded-2xl border-2 border-line bg-surface p-4 text-ink shadow-xl">
+        {notice.map((challenge) => <p key={challenge.id} className="mb-0 text-[18px]">Challenge booster: {challenge.title} (+{challenge.tokens} {challenge.tokens === 1 ? "coin" : "coins"} included).</p>)}
+        <button type="button" onClick={() => setNotice([])} className={`${br.ghost} mt-3 min-h-12 rounded-xl px-4 text-[18px]`}>Dismiss challenge notification</button>
+      </div>}
       <div className="flex items-center gap-3.5 pl-3.5 pr-[18px] pt-[22px]">
         {onExit ? (
           <button
@@ -241,7 +247,7 @@ export function StepPlayer({ routineId, walkthrough, onExit, startStep = 1 }: Pr
                   <span className="flex items-center gap-1 font-display text-[26px] font-bold">
                     <CoinIcon size={22} />+{earned.tokens}
                   </span>
-                  <span className="text-[15px] text-ink2">tokens</span>
+                  <span className="text-[15px] text-ink2">coins</span>
                 </div>
               )}
             </div>
@@ -251,7 +257,7 @@ export function StepPlayer({ routineId, walkthrough, onExit, startStep = 1 }: Pr
             {earned.streak !== null && earned.streak > 1 && (
               <p className="m-0 rounded-2xl bg-go-soft px-4 py-3 text-[17px] font-bold">{earned.streak}-day streak. Keep it going!</p>
             )}
-            <ChallengeDone challenges={earned.challenges} />
+            <ChallengeDone challenges={earned.challenges} showPopup={false} />
             {earned.unlocked.map((name) => (
               <p key={name} role="status" className="m-0 rounded-2xl bg-primary-soft px-4 py-3 text-[17px] font-bold">
                 You unlocked {name}! Pick it on the Me tab.

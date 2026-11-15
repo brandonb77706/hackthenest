@@ -20,7 +20,7 @@ const badges = earnBadges({
   tokens: 0,
   buddiesOn: ["2026-11-01"],
 });
-const nextReward = { label: "Next reward: Frog", percent: 0, detail: "120 tokens more to get Frog." };
+const nextReward = { label: "Next reward: Frog", percent: 0, detail: "120 coins more to get Frog." };
 
 describe("BadgesCard", () => {
   it("shows the count and next reward, and opens the full screen", () => {
@@ -45,7 +45,7 @@ describe("RewardsView", () => {
     expect(screen.getByRole("heading", { name: "Routines · 2 of 6" })).toBeInTheDocument();
     expect(screen.getByRole("heading", { name: "Skills · 1 of 4" })).toBeInTheDocument();
     expect(screen.getByRole("progressbar", { name: "Next reward: Frog" })).toBeInTheDocument();
-    expect(screen.getByText("0 tokens")).toBeInTheDocument();
+    expect(screen.getByText("0 coins")).toBeInTheDocument();
   });
 
   it("shows when a badge was earned", () => {
@@ -64,9 +64,9 @@ describe("RewardsView", () => {
   });
 
   it("shows the streak and the next streak reward", () => {
-    const streak = { label: "Streak: 4 days", percent: 57, detail: "3 more days to get 50 tokens and Turtle." };
+    const streak = { label: "Streak: 4 days", percent: 57, detail: "3 more days to get 50 coins and Turtle." };
     render(<RewardsView tokens={0} nextReward={null} badges={badges} streak={streak} />);
     expect(screen.getByRole("progressbar", { name: "Streak: 4 days" })).toHaveAttribute("aria-valuenow", "57");
-    expect(screen.getByText("3 more days to get 50 tokens and Turtle.")).toBeInTheDocument();
+    expect(screen.getByText("3 more days to get 50 coins and Turtle.")).toBeInTheDocument();
   });
 });

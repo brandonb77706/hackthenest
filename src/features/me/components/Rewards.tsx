@@ -103,7 +103,7 @@ export function RewardsView({
         <CoinIcon size={54} />
         <div className="flex min-w-0 grow flex-col gap-0.5">
           <span className="font-display text-[30px] font-bold leading-none">{formatTokens(tokens)}</span>
-          <span className="text-[15px] text-ink2">You earn tokens when you finish steps and routines.</span>
+          <span className="text-[15px] text-ink2">You earn coins when you finish steps and routines.</span>
         </div>
       </div>
       {nextReward && <ProgressCard id="next-reward-label" progress={nextReward} />}

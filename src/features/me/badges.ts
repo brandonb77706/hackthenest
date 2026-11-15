@@ -38,7 +38,7 @@ export const BADGES: BadgeDef[] = [
   { id: "bill", group: "skills", name: "Bill helper", desc: "Scan a letter and walk through it", icon: "doc", tone: "teal" },
   { id: "speak", group: "skills", name: "Speak up", desc: "Use Speak for me to say something", icon: "chat", tone: "orange" },
   { id: "paperpro", group: "skills", name: "Paper pro", desc: "Scan 5 letters or forms", icon: "doc", tone: "sea" },
-  { id: "tokens100", group: "collection", name: "100 tokens", desc: "Earn 100 tokens", icon: "coin", tone: "gold" },
+  { id: "tokens100", group: "collection", name: "100 coins", desc: "Earn 100 coins", icon: "coin", tone: "gold" },
   { id: "collector", group: "collection", name: "Buddy collector", desc: "Have 3 Buddies", icon: "people", tone: "teal" },
   { id: "colors", group: "collection", name: "Your colors", desc: "Pick a color scheme that suits you", icon: "palette", tone: "orange" },
 ];
@@ -153,7 +153,7 @@ export function earnBadges(facts: BadgeFacts): BadgeStatus[] {
     bill: { on: null, earned: false, hint: "Scan a letter on Scan" },
     speak: { on: null, earned: false, hint: "Try Speak for me on Help" },
     paperpro: { on: null, earned: false, hint: "Scan 5 letters" },
-    tokens100: { on: null, earned: facts.tokens >= 100, hint: `${Math.min(Math.max(facts.tokens, 0), 100)} of 100 tokens` },
+    tokens100: { on: null, earned: facts.tokens >= 100, hint: `${Math.min(Math.max(facts.tokens, 0), 100)} of 100 coins` },
     collector: { on: nth(facts.buddiesOn, 3), earned: facts.buddiesOn.length >= 3, hint: `${Math.min(facts.buddiesOn.length, 3)} of 3 Buddies` },
     colors: { on: null, earned: facts.pickedColors, hint: "Me > Color scheme" },
   };

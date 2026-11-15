@@ -22,7 +22,7 @@ type ShopAvatar = Pick<Avatar, "id" | "name" | "price">;
 
 /** "1 token", "25 tokens" */
 export function formatTokens(tokens: number): string {
-  return `${tokens} ${tokens === 1 ? "token" : "tokens"}`;
+  return `${tokens} ${tokens === 1 ? "coin" : "coins"}`;
 }
 
 /**
@@ -45,7 +45,7 @@ export function nextReward(tokens: number, shop: ShopAvatar[], ownedAvatarIds: I
     detail:
       missing > 0
         ? `${formatTokens(missing)} more to get ${next.name}.`
-        : `You have enough tokens for ${next.name}.`,
+        : `You have enough coins for ${next.name}.`,
   };
 }
 

@@ -43,7 +43,7 @@ describe("TodayScreen", () => {
     expect(await screen.findByRole("heading", { name: "1 of 3 done today" })).toBeInTheDocument();
     expect(screen.getByText(/^Good (morning|afternoon|evening), Jordan$/)).toBeInTheDocument();
     expect(screen.getByText("4 days")).toBeInTheDocument();
-    expect(screen.getByText("30 tokens")).toBeInTheDocument();
+    expect(screen.getByText("30 coins")).toBeInTheDocument();
   });
 
   it("makes the next routine the main action, with a Start link to the step player", async () => {

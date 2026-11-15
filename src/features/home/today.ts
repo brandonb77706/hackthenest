@@ -1,6 +1,16 @@
 // What's on today and what's done. Plain functions, no database.
 
 import type { RoutineTone, Weekday } from "@/lib/types";
+import { localNow } from "@/lib/time";
+
+/** Only check-ins on the current local calendar date count toward today's steps. */
+export function completedStepsOnDate(checkIns: { time: string; step_id: string }[], at: Date, timeZone: string): Set<string> {
+  const date = localNow(at, timeZone).date;
+  return new Set(checkIns.filter((checkIn) => {
+    const time = new Date(checkIn.time);
+    return !Number.isNaN(time.getTime()) && time <= at && localNow(time, timeZone).date === date;
+  }).map((checkIn) => checkIn.step_id));
+}
 
 export interface DayRoutine {
   id: string;

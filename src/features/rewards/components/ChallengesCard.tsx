@@ -49,7 +49,7 @@ export function ChallengesCard({ challenges }: { challenges: ChallengeStatus[] }
             </span>
             <span
               className={`flex shrink-0 items-center gap-1 rounded-full px-2.5 py-1 text-[15px] font-bold ${c.done ? "bg-go-soft text-ink" : "bg-sunken text-ink"}`}
-              aria-label={c.done ? `Earned ${c.tokens} tokens` : `Earns ${c.tokens} tokens`}
+              aria-label={c.done ? `Earned ${c.tokens} coins` : `Earns ${c.tokens} coins`}
             >
               <CoinIcon size={16} />+{c.tokens}
             </span>

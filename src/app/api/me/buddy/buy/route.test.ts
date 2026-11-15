@@ -13,7 +13,7 @@ const req = (body: unknown) => new Request("http://test", { method: "POST", body
 beforeEach(() => vi.clearAllMocks());
 
 describe("POST /api/me/buddy/buy", () => {
-  it("buys for the signed-in user and returns the tokens left", async () => {
+  it("buys for the signed-in user and returns the coins left", async () => {
     buy.mockResolvedValue({ ok: true, name: "Owl", tokens: 0 });
     const res = await POST(req({ avatar_id: "owl" }));
     expect(await res.json()).toEqual({ buddy_name: "Owl", tokens: 0 });
@@ -24,7 +24,7 @@ describe("POST /api/me/buddy/buy", () => {
     buy.mockResolvedValueOnce({ ok: false, name: "Owl", check: { ok: false, reason: "not_enough", missing: 60 } });
     const poor = await POST(req({ avatar_id: "owl" }));
     expect(poor.status).toBe(402);
-    expect(await poor.json()).toEqual({ error: "You need 60 more tokens for Owl. Finish routines to earn more.", reason: "not_enough" });
+    expect(await poor.json()).toEqual({ error: "You need 60 more coins for Owl. Finish routines to earn more.", reason: "not_enough" });
 
     buy.mockResolvedValueOnce({ ok: false, name: "Owl", check: { ok: false, reason: "owned" } });
     expect((await POST(req({ avatar_id: "owl" }))).status).toBe(409);

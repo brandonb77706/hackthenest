@@ -4,6 +4,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 vi.mock("@/features/camera-help/scan", () => ({ scanPhoto: vi.fn() }));
 vi.mock("@/lib/db", () => ({ getCurrentUserId: vi.fn(async () => "user-1") }));
 vi.mock("@/features/rewards/challengeService", () => ({ recordScan: vi.fn(async () => {}), claimChallenges: vi.fn(async () => []) }));
+vi.mock("@/lib/ai", () => ({ activeProvider: () => "base44" }));
 
 import { scanPhoto } from "@/features/camera-help/scan";
 import * as challenges from "@/features/rewards/challengeService";
@@ -22,7 +23,7 @@ describe("POST /api/scan", () => {
     const res = await post({ image });
     expect(res.status).toBe(200);
     expect(await res.json()).toEqual({ result, challenges: [] });
-    expect(scan).toHaveBeenCalledWith(image);
+    expect(scan).toHaveBeenCalledWith(image, undefined);
   });
 
   it("counts the scan for the daily challenge, and says when the challenge is done", async () => {

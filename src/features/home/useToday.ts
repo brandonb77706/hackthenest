@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { syncSettings } from "@/lib/settings";
+import { localNow } from "@/lib/time";
 import type { TodayResponse } from "./service";
 
 function timeZone(): string {
@@ -27,16 +28,23 @@ export function useToday(): TodayState {
 
   useEffect(() => {
     let cancelled = false;
-    (async () => {
+    let sequence = 0;
+    let loadedDay = "";
+    async function load() {
+      const request = ++sequence;
+      const zone = timeZone();
+      const requestDay = localNow(new Date(), zone).date;
       try {
-        const response = await fetch(`/api/today?tz=${encodeURIComponent(timeZone())}`, { cache: "no-store" });
+        const response = await fetch(`/api/today?tz=${encodeURIComponent(zone)}`, { cache: "no-store" });
         if (!response.ok) throw new Error(String(response.status));
         const today = (await response.json()) as TodayResponse;
-        if (cancelled) return;
+        if (cancelled || request !== sequence) return;
+        if (localNow(new Date(), timeZone()).date !== requestDay) { void load(); return; }
         if (today.settings) syncSettings(today.settings);
+        loadedDay = `${zone}:${requestDay}`;
         setState({ today, loading: false, error: "", hour: new Date().getHours() });
       } catch {
-        if (!cancelled) {
+        if (!cancelled && request === sequence) {
           setState({
             today: null,
             loading: false,
@@ -45,9 +53,23 @@ export function useToday(): TodayState {
           });
         }
       }
-    })();
+    }
+    function refreshIfDayChanged() {
+      const zone = timeZone();
+      if (`${zone}:${localNow(new Date(), zone).date}` !== loadedDay) {
+        setState((current) => ({ ...current, today: null, loading: true, error: "" }));
+        void load();
+      }
+    }
+    void load();
+    const timer = window.setInterval(refreshIfDayChanged, 30000);
+    window.addEventListener("focus", refreshIfDayChanged);
+    document.addEventListener("visibilitychange", refreshIfDayChanged);
     return () => {
       cancelled = true;
+      window.clearInterval(timer);
+      window.removeEventListener("focus", refreshIfDayChanged);
+      document.removeEventListener("visibilitychange", refreshIfDayChanged);
     };
   }, []);
 

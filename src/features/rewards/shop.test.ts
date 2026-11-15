@@ -9,7 +9,7 @@ describe("checkPurchase", () => {
     expect(checkPurchase({ avatar: owl, owned: false, balance: 260 })).toEqual({ ok: true, price: 200, left: 60 });
   });
 
-  it("says how many more tokens you need", () => {
+  it("says how many more coins you need", () => {
     expect(checkPurchase({ avatar: owl, owned: false, balance: 140 })).toEqual({ ok: false, reason: "not_enough", missing: 60 });
     expect(checkPurchase({ avatar: owl, owned: false, balance: -5 })).toEqual({ ok: false, reason: "not_enough", missing: 200 });
   });
@@ -23,7 +23,7 @@ describe("checkPurchase", () => {
 
 it("purchaseProblemText is plain and kind", () => {
   expect(purchaseProblemText({ ok: false, reason: "not_enough", missing: 1 }, "Owl")).toBe(
-    "You need 1 more token for Owl. Finish routines to earn more.",
+    "You need 1 more coin for Owl. Finish routines to earn more.",
   );
   expect(purchaseProblemText({ ok: false, reason: "owned" }, "Owl")).toBe("You already have Owl.");
 });

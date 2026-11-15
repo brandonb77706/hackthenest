@@ -45,6 +45,10 @@ export function parseStores(value: unknown): Store[] {
 export async function findStores(zip: string): Promise<Store[]> {
   return parseStores(await get("locations", new URLSearchParams({ "filter.zipCode.near": zip, "filter.limit": "20" })));
 }
+export async function findStoresNear(latitude: number, longitude: number): Promise<Store[]> {
+  const query = new URLSearchParams({ "filter.latLong.near": `${latitude},${longitude}`, "filter.radiusInMiles": "20", "filter.chain": "Kroger", "filter.limit": "20" });
+  return parseStores(await get("locations", query));
+}
 export async function findProducts(locationId: string, term: string) {
   const result = await get("products", new URLSearchParams({ "filter.locationId": locationId, "filter.term": term, "filter.limit": "20" }));
   if (!result || typeof result !== "object" || !("data" in result) || !Array.isArray(result.data)) throw new Error("Invalid products response");

@@ -1,5 +1,6 @@
 import { render, screen, within } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
+import userEvent from "@testing-library/user-event";
 import type { TodayRoutine } from "@/features/home/today";
 import { RoutinesScreen } from "./RoutinesScreen";
 
@@ -29,7 +30,8 @@ function serve(routines: TodayRoutine[] | null, extra: Record<string, unknown> =
 afterEach(() => vi.unstubAllGlobals());
 
 describe("RoutinesScreen", () => {
-  it("lists every routine with its time, steps, days, and today's status", async () => {
+  it("shows today's routines by default and lets users access other routines", async () => {
+    const user = userEvent.setup();
     serve([
       routine("a", "Morning routine", "done"),
       routine("b", "Pick up prescription", "next", { start_time: "14:00", step_count: 4 }),
@@ -38,13 +40,16 @@ describe("RoutinesScreen", () => {
     render(<RoutinesScreen />);
 
     const items = await screen.findAllByRole("listitem");
-    expect(items).toHaveLength(3);
+    expect(items).toHaveLength(2);
     expect(within(items[0]).getByText("Done")).toBeInTheDocument();
     expect(within(items[1]).getByText("2:00 PM · 4 steps")).toBeInTheDocument();
     expect(within(items[1]).getByText("Next")).toBeInTheDocument();
-    expect(within(items[2]).getByText("Not today")).toBeInTheDocument();
-    expect(within(items[2]).getByText("8:00 AM · 1 step")).toBeInTheDocument();
-    expect(within(items[2]).getByText("Sunday")).toBeInTheDocument();
+    expect(screen.queryByRole("link", { name: "Edit Laundry" })).not.toBeInTheDocument();
+    await user.click(screen.getByRole("button", { name: "Show all routines" }));
+    expect(screen.getByText("Not today")).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "Edit Laundry" })).toHaveAttribute("href", "/routines/c/edit");
+    await user.click(screen.getByRole("button", { name: "Show today's routines" }));
+    expect(screen.queryByRole("link", { name: "Edit Laundry" })).not.toBeInTheDocument();
   });
 
   it("starts a routine from its card and edits it from the Edit link", async () => {

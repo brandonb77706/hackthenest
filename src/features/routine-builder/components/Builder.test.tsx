@@ -1,4 +1,5 @@
 import { act, render, screen, waitFor, within } from "@testing-library/react";
+import { Activity } from "react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type { RoutineInput } from "../routineInput";
@@ -38,6 +39,16 @@ const call = (n: number) => {
 };
 
 describe("Builder: choosing how to start", () => {
+  it("returns from typing to the choices and keeps the typed text", async () => {
+    const user = userEvent.setup();
+    render(<Builder />);
+    await user.click(screen.getByRole("button", { name: /Type it/ }));
+    await user.type(screen.getByLabelText("What do you need to do?"), "Walk my dog");
+    await user.click(screen.getByRole("button", { name: "Back to choices" }));
+    expect(screen.getByRole("heading", { name: "Make a new routine" })).toBeInTheDocument();
+    await user.click(screen.getByRole("button", { name: /Type it/ }));
+    expect(screen.getByLabelText("What do you need to do?")).toHaveValue("Walk my dog");
+  });
   it("offers Say it, Type it, Build it myself, and the quick starts", () => {
     render(<Builder />);
     expect(screen.getByRole("heading", { name: "Make a new routine" })).toBeInTheDocument();
@@ -243,6 +254,28 @@ describe("Builder: checking steps", () => {
 });
 
 describe("Builder: when, saving, and ready", () => {
+  it("starts a new routine after a completed builder page is hidden and reopened", async () => {
+    fetchMock.mockResolvedValue(saved("new1"));
+    const user = userEvent.setup();
+    const view = render(<Activity mode="visible"><Builder /></Activity>);
+    await user.click(screen.getByRole("button", { name: "Take medicine" }));
+    await user.click(screen.getByRole("button", { name: "Next" }));
+    await user.click(screen.getByRole("button", { name: "Save routine" }));
+    expect(await screen.findByRole("heading", { name: "Take medicine is ready" })).toBeInTheDocument();
+    view.rerender(<Activity mode="hidden"><Builder /></Activity>);
+    view.rerender(<Activity mode="visible"><Builder /></Activity>);
+    expect(screen.getByRole("heading", { name: "Make a new routine" })).toBeInTheDocument();
+  });
+
+  it("keeps an unfinished typed draft when the builder page is hidden", async () => {
+    const user = userEvent.setup();
+    const view = render(<Activity mode="visible"><Builder /></Activity>);
+    await user.click(screen.getByRole("button", { name: /Type it/ }));
+    await user.type(screen.getByLabelText("What do you need to do?"), "Walk my dog");
+    view.rerender(<Activity mode="hidden"><Builder /></Activity>);
+    view.rerender(<Activity mode="visible"><Builder /></Activity>);
+    expect(screen.getByLabelText("What do you need to do?")).toHaveValue("Walk my dog");
+  });
   it("picks days, time, color, and reminder, saves, and offers to start", async () => {
     fetchMock.mockResolvedValue(saved("new1"));
     const user = userEvent.setup();

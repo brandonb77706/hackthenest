@@ -40,7 +40,7 @@ export function GuardianToday({ personId, name }: { personId: string; name: stri
                 {day?.streak ?? 0}-day streak
               </span>
               <span className="rounded-full bg-surface px-3 py-1 font-display text-[16px] font-bold text-ink shadow-[0_3px_0_var(--br-hero-edge)]">
-                {day?.tokens ?? 0} tokens
+                {day?.tokens ?? 0} coins
               </span>
             </div>
           </>

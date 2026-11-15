@@ -8,7 +8,7 @@ import { ChallengeDone } from "@/features/rewards/components/ChallengeDone";
 import type { ChallengeStatus } from "@/features/rewards/challenges";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useEffect, useReducer, useRef, useState } from "react";
+import { useEffect, useLayoutEffect, useReducer, useRef, useState } from "react";
 import { Buddy, useBuddyName } from "@/components/bridge/Buddy";
 import { Icon, type IconName } from "@/components/bridge/Icon";
 import { Switch } from "@/components/bridge/Switch";
@@ -107,6 +107,21 @@ export function Builder({ routineId, initial, forPerson }: Props) {
   const [challengesDone, setChallengesDone] = useState<ChallengeStatus[]>([]);
   const [confirmDelete, setConfirmDelete] = useState(false);
   const headingRef = useRef<HTMLHeadingElement>(null);
+
+  // Next.js preserves hidden pages. Once creation is complete, start fresh
+  // when the user leaves this page; preserve an unfinished draft instead.
+  useLayoutEffect(() => {
+    if (editing || stage !== "done") return;
+    return () => {
+      setStage("pick");
+      dispatch({ type: "load", routine: startingRoutine(BLANK_TEMPLATE_ID)! });
+      setText("");
+      setError("");
+      setDraftLevel(null);
+      setSavedId(null);
+      setChallengesDone([]);
+    };
+  }, [editing, stage]);
 
   const speech = useSpeechInput((said) => setText((t) => (t ? `${t} ${said}` : said).slice(0, MAX_GOAL_CHARS)));
 
@@ -410,6 +425,9 @@ export function Builder({ routineId, initial, forPerson }: Props) {
             >
               Type it instead
             </button>
+            <button type="button" onClick={() => { speech.stop(); go("pick"); }} className={`${br.ghost} min-h-12 rounded-2xl px-4 text-[18px]`}>
+              Back to choices
+            </button>
           </>
         )}
 
@@ -461,6 +479,9 @@ export function Builder({ routineId, initial, forPerson }: Props) {
             </button>
             <button type="button" onClick={() => pickWay("voice")} className={`${br.link} self-center`}>
               Say it instead
+            </button>
+            <button type="button" onClick={() => go("pick")} className={`${br.ghost} min-h-12 rounded-2xl px-4 text-[18px]`}>
+              Back to choices
             </button>
           </>
         )}

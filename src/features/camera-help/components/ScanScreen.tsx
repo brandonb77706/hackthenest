@@ -9,6 +9,8 @@ import { useEffect, useRef, useState } from "react";
 import { Icon } from "@/components/bridge/Icon";
 import { br } from "@/components/bridge/styles";
 import { StepPlayer } from "@/features/step-player/components/StepPlayer";
+import { ScanExplainer } from "@/features/scan-explainer/ScanExplainer";
+import { GeneratedVideoExplainer } from "@/features/scan-explainer/GeneratedVideoExplainer";
 import type { CameraHelpResponse } from "@/lib/ai/prompts/cameraHelp";
 import type { ImageInput } from "@/lib/ai/types";
 import { play, stop } from "@/lib/voice/player";
@@ -18,8 +20,10 @@ import { MAX_IMAGE_BYTES, base64Bytes } from "../scanInput";
 type Stage =
   | { kind: "idle"; error?: string }
   | { kind: "reading" }
-  | { kind: "done"; result: CameraHelpResponse }
-  | { kind: "walkthrough"; result: CameraHelpResponse };
+  | { kind: "done"; result: CameraHelpResponse; image: ImageInput }
+  | { kind: "explainer"; result: CameraHelpResponse; image: ImageInput }
+  | { kind: "video"; result: CameraHelpResponse; image: ImageInput }
+  | { kind: "walkthrough"; result: CameraHelpResponse; image: ImageInput };
 
 interface Props {
   /** Tests pass a fake. The real screen shrinks the photo in the browser. */
@@ -103,7 +107,7 @@ export function ScanScreen({ prepare = compressImage }: Props) {
         challenges?: ChallengeStatus[];
       };
       setChallengesDone(challenges ?? []);
-      setStage({ kind: "done", result });
+      setStage({ kind: "done", result, image });
       void play(`${result.what_it_is} ${result.summary}`);
     } catch {
       setStage({
@@ -120,6 +124,12 @@ export function ScanScreen({ prepare = compressImage }: Props) {
     input.click();
   }
 
+  if (stage.kind === "explainer") {
+    return <ScanExplainer result={stage.result} onExit={() => setStage({ kind: "done", result: stage.result, image: stage.image })} />;
+  }
+  if (stage.kind === "video") {
+    return <GeneratedVideoExplainer result={stage.result} onExit={() => setStage({ kind: "done", result: stage.result, image: stage.image })} />;
+  }
   if (stage.kind === "walkthrough") {
     return (
       <div className="fixed inset-0 z-40 mx-auto w-full max-w-[480px] overflow-y-auto bg-canvas">
@@ -128,7 +138,7 @@ export function ScanScreen({ prepare = compressImage }: Props) {
             title: stage.result.what_it_is.replace(/[.!]+$/, ""),
             steps: stage.result.actions,
           }}
-          onExit={() => setStage({ kind: "done", result: stage.result })}
+          onExit={() => setStage({ kind: "done", result: stage.result, image: stage.image })}
         />
       </div>
     );
@@ -196,8 +206,7 @@ export function ScanScreen({ prepare = compressImage }: Props) {
             Choose a photo
           </button>
           <p className="m-0 text-[15px] text-ink2">
-            Your picture stays private. It&apos;s only used to explain it to
-            you.
+            Your picture is sent to the configured AI service so it can explain it to you.
           </p>
         </div>
       )}
@@ -231,7 +240,9 @@ export function ScanScreen({ prepare = compressImage }: Props) {
         <Result
           result={stage.result}
           headingRef={headingRef}
-          onWalk={() => setStage({ kind: "walkthrough", result: stage.result })}
+          onWalk={() => setStage({ kind: "walkthrough", result: stage.result, image: stage.image })}
+          onExplain={() => { stop(); setStage({ kind: "explainer", result: stage.result, image: stage.image }); }}
+          onVideo={() => { stop(); setStage({ kind: "video", result: stage.result, image: stage.image }); }}
           onAgain={() => {
             stop();
             setStage({ kind: "idle" });
@@ -246,11 +257,15 @@ function Result({
   result: r,
   headingRef,
   onWalk,
+  onExplain,
+  onVideo,
   onAgain,
 }: {
   result: CameraHelpResponse;
   headingRef: React.RefObject<HTMLHeadingElement | null>;
   onWalk: () => void;
+  onExplain: () => void;
+  onVideo: () => void;
   onAgain: () => void;
 }) {
   const [first, ...moreDates] = r.deadlines;
@@ -303,6 +318,12 @@ function Result({
           </>
         )}
       </div>
+      <button type="button" onClick={onExplain} className={`${br.ghost} min-h-14 w-full rounded-2xl px-4 text-[18px]`}>
+        Show animated explanation
+      </button>
+      <button type="button" onClick={onVideo} className={`${br.cta} min-h-14 w-full rounded-2xl px-4 text-[18px]`}>
+        Create video explanation
+      </button>
       {r.actions.length > 0 && (
         <button
           type="button"

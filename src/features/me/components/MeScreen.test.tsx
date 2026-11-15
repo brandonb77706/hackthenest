@@ -34,7 +34,7 @@ function data(overrides: Partial<MeData> = {}): MeData {
       name: "Jordan",
       tokens: 25,
       buddyName: "Fox",
-      nextReward: { label: "Next reward: Astronaut cat", percent: 25, detail: "75 tokens more to get Astronaut cat." },
+      nextReward: { label: "Next reward: Astronaut cat", percent: 25, detail: "75 coins more to get Astronaut cat." },
     },
     buddies: buddyChoices(catalog, ["fox"], "fox"),
     contacts: [sam],
@@ -61,15 +61,15 @@ const bodyOf = (url: string) => {
 };
 
 describe("Me", () => {
-  it("shows the name, tokens, Buddy, and progress to the next reward", async () => {
+  it("shows the name, coins, Buddy, and progress to the next reward", async () => {
     const user = userEvent.setup();
     render(<MeScreen data={data()} />);
     expect(screen.getByRole("heading", { level: 1, name: "Jordan" })).toBeInTheDocument();
-    expect(screen.getByText("25 tokens · Buddy: Fox")).toBeInTheDocument();
+    expect(screen.getByText("25 coins · Buddy: Fox")).toBeInTheDocument();
     await user.click(screen.getByRole("button", { name: /Badges and rewards/ }));
     expect(screen.getByRole("heading", { level: 1, name: "Badges and rewards" })).toBeInTheDocument();
     expect(screen.getByRole("progressbar", { name: "Next reward: Astronaut cat" })).toHaveAttribute("aria-valuenow", "25");
-    expect(screen.getByText("75 tokens more to get Astronaut cat.")).toBeInTheDocument();
+    expect(screen.getByText("75 coins more to get Astronaut cat.")).toBeInTheDocument();
   });
 
   it("still has a heading before the profile exists, and no reward bar when there's none", () => {
@@ -165,9 +165,9 @@ describe("Me", () => {
     expect(screen.getByRole("heading", { name: "Choose your Buddy" })).toHaveFocus();
 
     // Not enough tokens: says how many more, and buys nothing.
-    await user.click(screen.getByRole("button", { name: /Astronaut cat, 100 tokens, tap to buy/ }));
-    const short = screen.getByRole("dialog", { name: "Astronaut cat costs 100 tokens" });
-    expect(within(short).getByText(/You need 75 tokens more/)).toBeInTheDocument();
+    await user.click(screen.getByRole("button", { name: /Astronaut cat, 100 coins, tap to buy/ }));
+    const short = screen.getByRole("dialog", { name: "Astronaut cat costs 100 coins" });
+    expect(within(short).getByText(/You need 75 coins more/)).toBeInTheDocument();
     await user.click(within(short).getByRole("button", { name: "OK" }));
     expect(fetchMock).not.toHaveBeenCalled();
 
@@ -177,7 +177,7 @@ describe("Me", () => {
     expect(getSettings().buddyName).toBe("Robot");
 
     await user.click(screen.getByRole("button", { name: "Back" }));
-    expect(screen.getByText("25 tokens · Buddy: Robot")).toBeInTheDocument();
+    expect(screen.getByText("25 coins · Buddy: Robot")).toBeInTheDocument();
   });
 
   it("changes the color scheme right away and saves it", async () => {
@@ -237,7 +237,7 @@ describe("Me", () => {
     expect(within(dialog).getAllByRole("switch").length).toBeGreaterThan(0);
   });
 
-  it("buys a shop Buddy with tokens, puts it on, and updates the tokens", async () => {
+  it("buys a shop Buddy with coins, puts it on, and updates the coins", async () => {
     fetchMock.mockImplementation(async (url: string) =>
       url === "/api/me/buddy/buy"
         ? new Response(JSON.stringify({ buddy_name: "Astronaut cat", tokens: 50 }), { status: 200 })
@@ -246,42 +246,42 @@ describe("Me", () => {
     const user = userEvent.setup();
     render(<MeScreen data={data({ summary: { name: "Jordan", tokens: 150, buddyName: "Fox", nextReward: null } })} />);
     await user.click(screen.getByRole("button", { name: "Change Buddy" }));
-    expect(screen.getByText("You have 150 tokens.")).toBeInTheDocument();
+    expect(screen.getByText("You have 150 coins.")).toBeInTheDocument();
 
-    await user.click(screen.getByRole("button", { name: /Astronaut cat, 100 tokens, tap to buy/ }));
+    await user.click(screen.getByRole("button", { name: /Astronaut cat, 100 coins, tap to buy/ }));
     const dialog = screen.getByRole("dialog", { name: "Buy Astronaut cat?" });
-    expect(within(dialog).getByText(/You'll have 50 tokens left/)).toBeInTheDocument();
+    expect(within(dialog).getByText(/You'll have 50 coins left/)).toBeInTheDocument();
     await user.click(within(dialog).getByRole("button", { name: "Not now" }));
     expect(fetchMock).not.toHaveBeenCalled();
 
-    await user.click(screen.getByRole("button", { name: /Astronaut cat, 100 tokens, tap to buy/ }));
-    await user.click(screen.getByRole("button", { name: "Buy for 100 tokens" }));
+    await user.click(screen.getByRole("button", { name: /Astronaut cat, 100 coins, tap to buy/ }));
+    await user.click(screen.getByRole("button", { name: "Buy for 100 coins" }));
     expect(await screen.findByText("You got Astronaut cat! Astronaut cat is your Buddy now.")).toBeInTheDocument();
     expect(bodyOf("/api/me/buddy/buy")).toEqual({ avatar_id: "cat" });
     expect(screen.getByRole("button", { name: /Astronaut cat, your Buddy/ })).toHaveAttribute("aria-pressed", "true");
-    expect(screen.getByText("You have 50 tokens.")).toBeInTheDocument();
+    expect(screen.getByText("You have 50 coins.")).toBeInTheDocument();
     expect(getSettings().buddyName).toBe("Astronaut cat");
   });
 
-  it("keeps the tokens and says why when buying fails", async () => {
-    fetchMock.mockImplementation(async () => new Response(JSON.stringify({ error: "You need 10 more tokens for Astronaut cat. Finish routines to earn more." }), { status: 402 }));
+  it("keeps the coins and says why when buying fails", async () => {
+    fetchMock.mockImplementation(async () => new Response(JSON.stringify({ error: "You need 10 more coins for Astronaut cat. Finish routines to earn more." }), { status: 402 }));
     const user = userEvent.setup();
     render(<MeScreen data={data({ summary: { name: "Jordan", tokens: 150, buddyName: "Fox", nextReward: null } })} />);
     await user.click(screen.getByRole("button", { name: "Change Buddy" }));
-    await user.click(screen.getByRole("button", { name: /Astronaut cat, 100 tokens, tap to buy/ }));
-    await user.click(screen.getByRole("button", { name: "Buy for 100 tokens" }));
-    expect(await within(screen.getByRole("dialog")).findByRole("alert")).toHaveTextContent("You need 10 more tokens");
-    expect(screen.getByText("You have 150 tokens.")).toBeInTheDocument();
+    await user.click(screen.getByRole("button", { name: /Astronaut cat, 100 coins, tap to buy/ }));
+    await user.click(screen.getByRole("button", { name: "Buy for 100 coins" }));
+    expect(await within(screen.getByRole("dialog")).findByRole("alert")).toHaveTextContent("You need 10 more coins");
+    expect(screen.getByText("You have 150 coins.")).toBeInTheDocument();
   });
 
-  it("shows fresh tokens when new data arrives while the screen stays open (tab switches)", async () => {
+  it("shows fresh coins when new data arrives while the screen stays open (tab switches)", async () => {
     const user = userEvent.setup();
     const { rerender } = render(<MeScreen data={data()} />);
-    expect(screen.getByText("25 tokens · Buddy: Fox")).toBeInTheDocument();
+    expect(screen.getByText("25 coins · Buddy: Fox")).toBeInTheDocument();
     // Coming back to Me after finishing a routine: Next.js keeps the screen and passes new data.
     rerender(<MeScreen data={data({ summary: { name: "Jordan", tokens: 105, buddyName: "Fox", nextReward: null } })} />);
-    expect(screen.getByText("105 tokens · Buddy: Fox")).toBeInTheDocument();
+    expect(screen.getByText("105 coins · Buddy: Fox")).toBeInTheDocument();
     await user.click(screen.getByRole("button", { name: "Change Buddy" }));
-    expect(screen.getByText("You have 105 tokens.")).toBeInTheDocument();
+    expect(screen.getByText("You have 105 coins.")).toBeInTheDocument();
   });
 });

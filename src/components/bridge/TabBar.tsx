@@ -55,6 +55,7 @@ export function TabBar() {
           className="fixed bottom-[172px] left-1/2 z-30 ml-[calc(min(100vw,480px)/2-266px)] w-[250px] rounded-[18px] border-2 border-line bg-surface px-4 py-3.5 text-[16px] text-ink shadow-[0_8px_24px_rgba(0,0,0,0.14)]"
         >
           <strong className="font-display">{buddyName}:</strong> {current.tip}
+          <Link href="/buddy-chat" onClick={() => { setTipFor(null); stop(); }} className="mt-3 flex min-h-12 items-center justify-center rounded-xl bg-primary-soft px-4 font-display text-[18px] font-bold text-primary-text">Chat with Buddy</Link>
         </div>
       )}
 

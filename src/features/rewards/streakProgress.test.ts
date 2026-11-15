@@ -20,19 +20,19 @@ describe("streakProgress", () => {
     expect(streakProgress(4)).toEqual({
       label: "Streak: 4 days",
       percent: 57,
-      detail: "3 more days to get 50 tokens.",
+      detail: "3 more days to get 50 coins.",
     });
   });
 
   it("uses singular words for 1", () => {
     expect(streakProgress(1).label).toBe("Streak: 1 day");
-    expect(streakProgress(2).detail).toBe("1 more day to get 25 tokens.");
+    expect(streakProgress(2).detail).toBe("1 more day to get 25 coins.");
   });
 
   it("does not reset to empty after reaching a milestone", () => {
     const result = streakProgress(7);
     expect(result.percent).toBe(50);
-    expect(result.detail).toBe("7 more days to get 100 tokens.");
+    expect(result.detail).toBe("7 more days to get 100 coins.");
   });
 
   it.each([30, 45])("is full after every milestone (%i days)", (days: number) => {
@@ -43,18 +43,18 @@ describe("streakProgress", () => {
 
   it("names the streak Buddy waiting at the next milestone", () => {
     expect(streakProgress(4, { streakBuddies: buddies }).detail).toBe(
-      "3 more days to get 50 tokens and Bronze Star Buddy.",
+      "3 more days to get 50 coins and Bronze Star Buddy.",
     );
   });
 
-  it("shows only tokens when no Buddy unlocks at that milestone", () => {
-    expect(streakProgress(1, { streakBuddies: buddies }).detail).toBe("2 more days to get 25 tokens.");
+  it("shows only coins when no Buddy unlocks at that milestone", () => {
+    expect(streakProgress(1, { streakBuddies: buddies }).detail).toBe("2 more days to get 25 coins.");
   });
 
   it("mentions saved freezes", () => {
-    expect(streakProgress(4, { freezes: 0 }).detail).toBe("3 more days to get 50 tokens.");
-    expect(streakProgress(4, { freezes: 1 }).detail).toBe("3 more days to get 50 tokens. 1 freeze saved.");
-    expect(streakProgress(4, { freezes: 2 }).detail).toBe("3 more days to get 50 tokens. 2 freezes saved.");
+    expect(streakProgress(4, { freezes: 0 }).detail).toBe("3 more days to get 50 coins.");
+    expect(streakProgress(4, { freezes: 1 }).detail).toBe("3 more days to get 50 coins. 1 freeze saved.");
+    expect(streakProgress(4, { freezes: 2 }).detail).toBe("3 more days to get 50 coins. 2 freezes saved.");
     expect(streakProgress(0, { freezes: 2 }).detail).toBe("Do one routine today to start your streak. 2 freezes saved.");
   });
 
@@ -62,7 +62,7 @@ describe("streakProgress", () => {
     expect(streakProgress(-3).percent).toBe(0);
     expect(streakProgress(Number.NaN).percent).toBe(0);
     expect(streakProgress(4.7)).toEqual(streakProgress(4));
-    expect(streakProgress(4, { freezes: -1 }).detail).toBe("3 more days to get 50 tokens.");
+    expect(streakProgress(4, { freezes: -1 }).detail).toBe("3 more days to get 50 coins.");
   });
 
   it("keeps the percent between 0 and 100", () => {

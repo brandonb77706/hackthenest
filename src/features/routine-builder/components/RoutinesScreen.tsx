@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { useState } from "react";
 import { Icon } from "@/components/bridge/Icon";
 import { br } from "@/components/bridge/styles";
 import { routineIcon } from "@/features/home/routineIcon";
@@ -14,7 +15,9 @@ const BADGE: Record<RoutineStatus, string> = { done: "Done", next: "Next", later
 /** The Routines tab: every routine as a card. Tap a card to start it. */
 export function RoutinesScreen() {
   const { today, loading, error } = useToday();
-  const routines = today?.routines ?? [];
+  const [showAll, setShowAll] = useState(false);
+  const allRoutines = today?.routines ?? [];
+  const routines = showAll ? allRoutines : allRoutines.filter((routine) => routine.status !== "not_today");
   // A guardian can turn off making and changing routines. Doing them is never limited.
   const rule = today?.edit?.routines;
   const canEdit = rule?.allowed !== false;
@@ -36,6 +39,12 @@ export function RoutinesScreen() {
       </div>
       {rule && !canEdit && <ManagedNote area="routines" rule={rule} />}
 
+      {allRoutines.some((routine) => routine.status === "not_today") && (
+        <button type="button" className={`${br.ghost} min-h-12 rounded-2xl px-4 text-[18px]`} aria-pressed={showAll} onClick={() => setShowAll((value) => !value)}>
+          {showAll ? "Show today's routines" : "Show all routines"}
+        </button>
+      )}
+
       {loading && <p role="status" className="m-0">Loading your routines…</p>}
       {error && (
         <p role="alert" className="m-0 rounded-2xl bg-danger-soft px-5 py-4 font-bold text-danger-text">
@@ -44,7 +53,7 @@ export function RoutinesScreen() {
       )}
       {!loading && !error && routines.length === 0 && (
         <p className="m-0 rounded-[14px] bg-sunken px-4 py-3.5 text-[16px]">
-          {canEdit ? "You don't have any routines yet. Tap New to make your first one." : "You don't have any routines yet."}
+          {allRoutines.length > 0 && !showAll ? "No routines are scheduled for today." : canEdit ? "You don't have any routines yet. Tap New to make your first one." : "You don't have any routines yet."}
         </p>
       )}
 

@@ -3,6 +3,7 @@ export interface Store { locationId: string; name: string; }
 export interface Product { id: string; name: string; availability: Availability; aisle: string | null; }
 export interface GroceryCatalog {
   stores(zip: string): Promise<Store[]>;
+  storesNear(latitude: number, longitude: number): Promise<Store[]>;
   search(locationId: string, term: string): Promise<Product[]>;
 }
 
@@ -30,6 +31,7 @@ const mockProducts = [
 ];
 export const mockCatalog: GroceryCatalog = {
   async stores() { return mockStores; },
+  async storesNear() { return mockStores; },
   async search(locationId, term) {
     if (!mockStores.some((store) => store.locationId === locationId)) throw new Error("Choose a store first.");
     return parseProductResponse({ data: mockProducts }).filter((p) => p.name.toLowerCase().includes(term.trim().toLowerCase()));
@@ -47,5 +49,11 @@ export const liveCatalog: GroceryCatalog = {
     const response = await fetch(`/api/groceries/products?${query}`);
     if (!response.ok) throw new Error("Products unavailable");
     return (await response.json()).products;
+  },
+  async storesNear(latitude, longitude) {
+    const query = new URLSearchParams({ lat: String(latitude), lon: String(longitude) });
+    const response = await fetch(`/api/groceries/stores?${query}`);
+    if (!response.ok) throw new Error("Store search is unavailable");
+    return (await response.json()).stores;
   },
 };

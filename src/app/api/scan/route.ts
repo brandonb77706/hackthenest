@@ -3,6 +3,8 @@ import { scanPhoto } from "@/features/camera-help/scan";
 import { claimChallenges, recordScan } from "@/features/rewards/challengeService";
 import type { ChallengeStatus } from "@/features/rewards/challenges";
 import { getCurrentUserId } from "@/lib/db";
+import { geminiScanProvider } from "@/features/scan-explainer/analyzeImage";
+import { activeProvider } from "@/lib/ai";
 
 /**
  * Explains a photo of a letter, bill, or form: POST ?tz=America/Chicago { image: { data, mime } }.
@@ -17,7 +19,10 @@ export async function POST(request: Request) {
     );
   }
   const userId = await getCurrentUserId();
-  const scan = await scanPhoto(check.image);
+  if (!process.env.GEMINI_API_KEY && activeProvider("cameraHelp") === "mock") {
+    return Response.json({ error: "Image analysis is not configured." }, { status: 503 });
+  }
+  const scan = await scanPhoto(check.image, process.env.GEMINI_API_KEY ? geminiScanProvider() : undefined);
   if (!scan.ok) return Response.json({ error: "I couldn't read that.", reason: scan.reason }, { status: 502 });
   // Daily challenge: count the scan. A rewards problem never hides the answer.
   let challenges: ChallengeStatus[] = [];

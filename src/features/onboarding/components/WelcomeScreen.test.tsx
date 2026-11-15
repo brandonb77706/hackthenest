@@ -68,7 +68,7 @@ describe("WelcomeScreen", () => {
     expect(screen.getByRole("heading", { name: "Pick your Buddy" })).toBeInTheDocument();
     expect(screen.getAllByRole("radio")).toHaveLength(5);
     expect(screen.getByRole("radio", { name: "Fox" })).toHaveAttribute("aria-checked", "true");
-    expect(screen.getByRole("radio", { name: "Frog, locked, 120 tokens" })).toBeInTheDocument();
+    expect(screen.getByRole("radio", { name: "Frog, locked, 120 coins" })).toBeInTheDocument();
     expect(screen.getByRole("radio", { name: "Turtle, locked, 7-day streak" })).toBeInTheDocument();
     fireEvent.click(screen.getByRole("button", { name: "Back" }));
     expect(screen.getByLabelText("Your name")).toHaveValue("Jordan");

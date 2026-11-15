@@ -8,8 +8,10 @@ vi.mock("@/lib/db", () => ({
   UserProfileModel: { findOne: (...args: unknown[]) => findOne(...args) },
 }));
 vi.mock("@/features/routine-builder/aiDraft", () => ({ draftRoutine: vi.fn() }));
+vi.mock("@/lib/ai", () => ({ activeProvider: vi.fn(() => "base44") }));
 
 import { draftRoutine } from "@/features/routine-builder/aiDraft";
+import { activeProvider } from "@/lib/ai";
 import type { RoutineInput } from "@/features/routine-builder/routineInput";
 import { POST } from "./route";
 
@@ -69,5 +71,22 @@ describe("POST /api/routines/draft", () => {
     const res = await post({ goal: "pills" });
     expect(res.status).toBe(502);
     expect((await res.json()).error).toMatch(/couldn't make steps/);
+  });
+
+  it("uses Gemini for the typed goal when Base44 is unavailable", async () => {
+    vi.stubEnv("GEMINI_API_KEY", "test-key");
+    vi.mocked(activeProvider).mockReturnValueOnce("mock");
+    const res = await post({ goal: "walk my dog" });
+    expect(res.status).toBe(200);
+    expect(draft).toHaveBeenCalledWith("walk my dog", "high", expect.objectContaining({ generateJSON: expect.any(Function) }));
+    vi.unstubAllEnvs();
+  });
+
+  it("does not return a sample routine when no real provider is configured", async () => {
+    vi.stubEnv("GEMINI_API_KEY", "");
+    vi.mocked(activeProvider).mockReturnValueOnce("mock");
+    expect((await post({ goal: "walk my dog" })).status).toBe(503);
+    expect(draft).not.toHaveBeenCalled();
+    vi.unstubAllEnvs();
   });
 });

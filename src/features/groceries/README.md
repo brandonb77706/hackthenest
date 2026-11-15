@@ -1,7 +1,7 @@
 # Grocery shopping
 
-This local prototype searches Kroger's **production** catalog. Enter a five-digit
-ZIP code, choose a store, search products, and add or remove items. Availability
+This local prototype searches Kroger's **production** catalog. Use your precise
+location or enter a five-digit ZIP code, choose a store, search products, and add or remove items. Availability
 and aisle information are displayed only when returned by Kroger. Missing values
 are shown as unknown, with a phrase the user can read aloud for help. The list is
 held in page memory and clears on reload or store change.

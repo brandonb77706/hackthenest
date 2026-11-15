@@ -54,7 +54,7 @@ export function TodayScreen() {
           </span>
           <span className={chip}>
             <CoinIcon />
-            {today?.tokens ?? 0} tokens
+            {today?.tokens ?? 0} coins
           </span>
         </div>
       </header>

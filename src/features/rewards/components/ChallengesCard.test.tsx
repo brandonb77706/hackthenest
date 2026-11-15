@@ -20,8 +20,8 @@ describe("ChallengesCard", () => {
     expect(within(card).getByText("1 of 3 done")).toBeInTheDocument();
     expect(within(card).getByRole("progressbar", { name: "Finish all of today's routines: 2 of 3 routines" })).toHaveAttribute("aria-valuenow", "67");
     expect(within(card).getByText("Done today")).toBeInTheDocument();
-    expect(within(card).getByLabelText("Earned 40 tokens")).toBeInTheDocument();
-    expect(within(card).getByLabelText("Earns 30 tokens")).toBeInTheDocument();
+    expect(within(card).getByLabelText("Earned 40 coins")).toBeInTheDocument();
+    expect(within(card).getByLabelText("Earns 30 coins")).toBeInTheDocument();
   });
 
   it("shows nothing without challenges", () => {
@@ -32,5 +32,6 @@ describe("ChallengesCard", () => {
 
 it("ChallengeDone celebrates each challenge just finished", () => {
   render(<ChallengeDone challenges={[{ id: "all_routines", title: "Finish all of today's routines", tokens: 50 }]} />);
-  expect(screen.getByRole("status")).toHaveTextContent("Challenge done! Finish all of today's routines. +50 tokens");
+  expect(screen.getByRole("status")).toHaveTextContent("Challenge booster! Finish all of today's routines: +50 coins.");
+  expect(screen.getByRole("button", { name: "Dismiss challenge notification" })).toBeInTheDocument();
 });

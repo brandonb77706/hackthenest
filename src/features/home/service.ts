@@ -19,7 +19,7 @@ import { getChallenges } from "@/features/rewards/challengeService";
 import type { ChallengeStatus } from "@/features/rewards/challenges";
 import { localNow } from "@/lib/time";
 import type { Avatar, CheckIn, ID, Routine, Step, UserProfile } from "@/lib/types";
-import { summarizeDay, type TodayRoutine } from "./today";
+import { completedStepsOnDate, summarizeDay, type TodayRoutine } from "./today";
 
 export interface TodayResponse {
   name: string;
@@ -56,12 +56,7 @@ export async function getToday(userId: ID, timeZone: string, at = new Date()): P
     stepIds.set(step.routine_id, [...(stepIds.get(step.routine_id) ?? []), step.id]);
   }
   const now = localNow(at, timeZone);
-  const doneStepIds = new Set(
-    recent
-      .map((doc) => toRecord<CheckIn>(doc))
-      .filter((c) => localNow(new Date(c.time), timeZone).date === now.date)
-      .map((c) => c.step_id),
-  );
+  const doneStepIds = completedStepsOnDate(recent.map((doc) => toRecord<CheckIn>(doc)), at, timeZone);
 
   const profileRecord = profile ? toRecord<UserProfile>(profile) : null;
   const buddyDoc = profileRecord?.equipped_avatar_id ? await AvatarModel.findById(profileRecord.equipped_avatar_id) : null;

@@ -35,6 +35,25 @@ export function GroceryShopping({ catalog = liveCatalog, demo = false }: { catal
     } catch { if (request === generation.current) setStatus("Stores could not be loaded. Try again."); }
     finally { if (request === generation.current) setBusy(false); }
   }
+  async function findNearbyStores() {
+    if (!navigator.geolocation) { setStatus("Location is not available in this browser. Enter your ZIP code instead."); return; }
+    const request = ++generation.current;
+    setBusy(true); setLocationId(""); setStores([]); setResults([]); setItems([]); setCollected(new Set()); setStatus("Asking for your location…");
+    navigator.geolocation.getCurrentPosition(async (position) => {
+      if (request !== generation.current) return;
+      setStatus("Finding nearby Kroger stores…");
+      try {
+        const found = await catalog.storesNear(position.coords.latitude, position.coords.longitude);
+        if (request !== generation.current) return;
+        setStores(found); setStatus(found.length ? "Choose a nearby store." : "No Kroger stores found nearby. Try a ZIP code.");
+      } catch { if (request === generation.current) setStatus("Nearby stores could not be loaded. Try a ZIP code."); }
+      finally { if (request === generation.current) setBusy(false); }
+    }, (error) => {
+      if (request !== generation.current) return;
+      setBusy(false);
+      setStatus(error.code === error.PERMISSION_DENIED ? "Location permission was not allowed. Enter your ZIP code instead." : "We could not get your location. Enter your ZIP code instead.");
+    }, { enableHighAccuracy: true, timeout: 12000, maximumAge: 60000 });
+  }
   async function search(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
     if (!locationId || !term.trim()) { setStatus("Choose a store and enter an item."); return; }
@@ -86,6 +105,9 @@ export function GroceryShopping({ catalog = liveCatalog, demo = false }: { catal
       </div>}
     </section>
     <div className="mt-6 flex flex-col gap-5 rounded-[20px] border-2 border-line bg-surface p-4 shadow-[0_4px_0_var(--br-line)]">
+    <button type="button" className={`${br.ghost} min-h-14 rounded-2xl px-4 text-[18px]`} onClick={() => void findNearbyStores()} disabled={busy}>Use my precise location</button>
+    <p className="m-0 text-[16px] text-ink2">Your location is used only to find nearby stores and is not saved.</p>
+    <p className="m-0 text-center text-[16px] text-ink2">Or search by ZIP code</p>
     <form onSubmit={findStores} className="flex flex-col gap-2"><label htmlFor="grocery-zip" className="font-display text-[18px] font-semibold">ZIP code</label>
       <input id="grocery-zip" className={br.input} inputMode="numeric" autoComplete="postal-code" maxLength={5} value={zip} onChange={(e) => setZip(e.target.value)} />
       <button className={`${br.ghost} mt-1 min-h-12 rounded-[14px] px-4 text-[17px]`} type="submit" disabled={busy}>Find stores</button></form>

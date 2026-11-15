@@ -157,7 +157,7 @@ describe("StepPlayer", () => {
     expect(url).toMatch(/\/done\?tz=.+/);
   });
 
-  it("shows and says the tokens earned, the streak, and an unlocked Buddy", async () => {
+  it("shows and says the coins earned, the streak, and an unlocked Buddy", async () => {
     doneReplies = [
       { earned: 5, awards: [{ amount: 5, reason: "step" }], finished_routine: false, streak: null, unlocked: [] },
       { earned: 5, awards: [{ amount: 5, reason: "step" }], finished_routine: false, streak: null, unlocked: [] },
@@ -182,10 +182,13 @@ describe("StepPlayer", () => {
     }
     expect(await screen.findByRole("heading", { name: "Morning routine done" })).toBeInTheDocument();
     expect(screen.getByText("+85")).toBeInTheDocument();
+    expect(screen.getByText(/Challenge booster: Finish all of today's routines/)).toHaveTextContent("+50 coins included");
+    await user.click(screen.getByRole("button", { name: "Dismiss challenge notification" }));
+    expect(screen.queryByText(/Challenge booster: Finish all of today's routines/)).not.toBeInTheDocument();
     expect(screen.getByText("7-day streak. Keep it going!")).toBeInTheDocument();
     expect(screen.getByText("You unlocked Turtle! Pick it on the Me tab.")).toBeInTheDocument();
-    expect(screen.getByText(/Challenge done!/).closest("p")).toHaveTextContent("Finish all of today's routines. +50 tokens");
-    await waitFor(() => expect(play).toHaveBeenCalledWith("Morning routine done. Nice work. You earned 85 tokens."));
+    expect(screen.getByText(/Challenge done!/).closest("p")).toHaveTextContent("Finish all of today's routines. +50 coins");
+    await waitFor(() => expect(play).toHaveBeenCalledWith("Morning routine done. Nice work. You earned 85 coins."));
   });
 
   it("says a repeat earns nothing more, without making it sound bad", async () => {

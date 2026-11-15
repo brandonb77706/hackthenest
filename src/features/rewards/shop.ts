@@ -28,8 +28,8 @@ export function purchaseProblemText(check: Exclude<PurchaseCheck, { ok: true }>,
     case "owned":
       return `You already have ${name}.`;
     case "not_for_sale":
-      return `${name} can't be bought with tokens.`;
+      return `${name} can't be bought with coins.`;
     case "not_enough":
-      return `You need ${check.missing} more ${check.missing === 1 ? "token" : "tokens"} for ${name}. Finish routines to earn more.`;
+      return `You need ${check.missing} more ${check.missing === 1 ? "coin" : "coins"} for ${name}. Finish routines to earn more.`;
   }
 }
