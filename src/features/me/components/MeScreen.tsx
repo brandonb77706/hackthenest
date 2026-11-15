@@ -8,7 +8,7 @@
 import { useEffect, useRef, useState, useSyncExternalStore } from "react";
 import { BuddyAvatar } from "@/components/bridge/BuddyAvatar";
 import { Dialog } from "@/components/bridge/Dialog";
-import { Icon } from "@/components/bridge/Icon";
+import { CoinIcon, Icon } from "@/components/bridge/Icon";
 import { SchemeCard } from "@/components/bridge/SchemeCard";
 import { Switch } from "@/components/bridge/Switch";
 import { br } from "@/components/bridge/styles";
@@ -29,7 +29,7 @@ import { BadgesCard, RewardsView } from "./Rewards";
 import { SignOutButton } from "@/features/auth/components/SignOutButton";
 export { sharingSummary } from "../sharing";
 import type { MeData } from "../service";
-import { buddyTag, formatTokens, type BuddyChoice } from "../summary";
+import { buddyTag, formatTokens, nextReward as nextRewardFor, type BuddyChoice } from "../summary";
 
 type View =
   | { kind: "home" }
@@ -74,7 +74,20 @@ export function MeScreen({ data }: { data: MeData }) {
   const [showBuddy, setShowBuddy] = useState(data.settings.show_buddy);
   const [error, setError] = useState("");
   const headingRef = useRef<HTMLHeadingElement>(null);
-  const { name, tokens, nextReward } = data.summary;
+  const { name } = data.summary;
+  // Tokens change here when a Buddy is bought, so the next reward is worked out again.
+  const [tokens, setTokens] = useState(data.summary.tokens);
+  const [buying, setBuying] = useState<BuddyChoice | null>(null);
+  const [buyBusy, setBuyBusy] = useState(false);
+  const [bought, setBought] = useState<string | null>(null);
+  const nextReward =
+    tokens === data.summary.tokens
+      ? data.summary.nextReward
+      : nextRewardFor(
+          tokens,
+          buddies.filter((b) => b.unlock_type === "shop"),
+          buddies.filter((b) => b.owned).map((b) => b.id),
+        );
   const device = useSyncExternalStore(
     subscribeSettings,
     getSettings,
@@ -101,7 +114,41 @@ export function MeScreen({ data }: { data: MeData }) {
     setView(next);
   }
 
+  /** Shop Buddies not owned yet can be bought with tokens. */
+  const forSale = (b: BuddyChoice) => !b.owned && b.unlock_type === "shop" && (b.price ?? 0) > 0;
+
+  async function buy(b: BuddyChoice) {
+    setBuyBusy(true);
+    setError("");
+    try {
+      const res = await fetch("/api/me/buddy/buy", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ avatar_id: b.id }),
+      });
+      const body = (await res.json().catch(() => ({}))) as { buddy_name?: string; tokens?: number; error?: string };
+      if (!res.ok) throw new Error(body.error || "Couldn't buy it. Try again.");
+      setBuddies((list) =>
+        list.map((x) => ({ ...x, equipped: x.id === b.id, owned: x.owned || x.id === b.id, can_choose: x.can_choose || x.id === b.id })),
+      );
+      setBuddyName(b.name);
+      setTokens(typeof body.tokens === "number" ? body.tokens : tokens - (b.price ?? 0));
+      updateSettings({ buddyName: b.name });
+      setBought(b.name);
+      setBuying(null);
+    } catch (err) {
+      setError(err instanceof Error && err.message !== "Failed to fetch" ? err.message : "Couldn't buy it. Check your internet.");
+    } finally {
+      setBuyBusy(false);
+    }
+  }
+
   async function choose(b: BuddyChoice) {
+    if (forSale(b)) {
+      setError("");
+      setBuying(b);
+      return;
+    }
     if (!b.can_choose || b.equipped) return;
     const before = buddies;
     setBuddies(
@@ -262,6 +309,17 @@ export function MeScreen({ data }: { data: MeData }) {
             <p className="m-0 -mt-1 text-ink2">
               Your Buddy holds the tab bar and gives tips when you tap it.
             </p>
+            <div className="flex items-center gap-2.5 rounded-2xl bg-primary-soft px-4 py-3">
+              <CoinIcon size={28} />
+              <span className="text-[17px]">
+                <strong>You have {formatTokens(tokens)}.</strong> Tap a Buddy with a price to buy it.
+              </span>
+            </div>
+            {bought && (
+              <p role="status" className="m-0 rounded-2xl bg-go-soft px-4 py-3 text-[17px] font-bold">
+                You got {bought}! {bought} is your Buddy now.
+              </p>
+            )}
             <div className="grid grid-cols-2 gap-3">
               {buddies.map((b) => {
                 const locked = !b.can_choose;
@@ -271,8 +329,11 @@ export function MeScreen({ data }: { data: MeData }) {
                     type="button"
                     onClick={() => choose(b)}
                     aria-pressed={b.equipped}
-                    aria-disabled={locked}
-                    aria-label={`${b.name}, ${b.equipped ? "your Buddy" : locked ? `locked, ${buddyTag(b)}` : "tap to choose"}`}
+                    aria-disabled={locked && !forSale(b)}
+                    aria-haspopup={forSale(b) ? "dialog" : undefined}
+                    aria-label={`${b.name}, ${
+                      b.equipped ? "your Buddy" : forSale(b) ? `${buddyTag(b)}, tap to buy` : locked ? `locked, ${buddyTag(b)}` : "tap to choose"
+                    }`}
                     className={`br-press flex flex-col items-center gap-1.5 rounded-[22px] border-[3px] px-2.5 pb-3.5 pt-4 text-ink ${
                       b.equipped
                         ? "border-switch-on bg-primary-soft shadow-[0_4px_0_var(--br-switch-on)]"
@@ -317,6 +378,49 @@ export function MeScreen({ data }: { data: MeData }) {
                 );
               })}
             </div>
+            {buying && (
+              <Dialog
+                title={tokens >= (buying.price ?? 0) ? `Buy ${buying.name}?` : `${buying.name} costs ${formatTokens(buying.price ?? 0)}`}
+                onClose={() => setBuying(null)}
+              >
+                <div className="flex items-center gap-3.5">
+                  <span className="flex size-[88px] shrink-0 items-end justify-center overflow-hidden rounded-full bg-primary-soft">
+                    <BuddyAvatar name={buying.name} size={82} />
+                  </span>
+                  {tokens >= (buying.price ?? 0) ? (
+                    <p className="m-0 text-[17px]">
+                      It costs {formatTokens(buying.price ?? 0)}. You&apos;ll have {formatTokens(tokens - (buying.price ?? 0))} left, and{" "}
+                      {buying.name} becomes your Buddy.
+                    </p>
+                  ) : (
+                    <p className="m-0 text-[17px]">
+                      You have {formatTokens(tokens)}. You need {formatTokens((buying.price ?? 0) - tokens)} more. Finish routines to earn
+                      them.
+                    </p>
+                  )}
+                </div>
+                {errorLine}
+                {tokens >= (buying.price ?? 0) ? (
+                  <>
+                    <button
+                      type="button"
+                      onClick={() => buy(buying)}
+                      disabled={buyBusy}
+                      className={`${br.cta} min-h-[58px] rounded-2xl text-[20px]`}
+                    >
+                      {buyBusy ? "Buying…" : `Buy for ${formatTokens(buying.price ?? 0)}`}
+                    </button>
+                    <button type="button" onClick={() => setBuying(null)} className={`${br.ghost} min-h-[54px] rounded-2xl text-[17px]`}>
+                      Not now
+                    </button>
+                  </>
+                ) : (
+                  <button type="button" onClick={() => setBuying(null)} className={`${br.cta} min-h-[58px] rounded-2xl text-[20px]`}>
+                    OK
+                  </button>
+                )}
+              </Dialog>
+            )}
           </>
         )}
 

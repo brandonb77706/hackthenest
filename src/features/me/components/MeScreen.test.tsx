@@ -164,8 +164,11 @@ describe("Me", () => {
     await user.click(screen.getByRole("button", { name: "Change Buddy" }));
     expect(screen.getByRole("heading", { name: "Choose your Buddy" })).toHaveFocus();
 
-    const cat = screen.getByRole("button", { name: /Astronaut cat, locked, 100 tokens/ });
-    await user.click(cat);
+    // Not enough tokens: says how many more, and buys nothing.
+    await user.click(screen.getByRole("button", { name: /Astronaut cat, 100 tokens, tap to buy/ }));
+    const short = screen.getByRole("dialog", { name: "Astronaut cat costs 100 tokens" });
+    expect(within(short).getByText(/You need 75 tokens more/)).toBeInTheDocument();
+    await user.click(within(short).getByRole("button", { name: "OK" }));
     expect(fetchMock).not.toHaveBeenCalled();
 
     await user.click(screen.getByRole("button", { name: /Robot, tap to choose/ }));
@@ -232,5 +235,42 @@ describe("Me", () => {
     const dialog = screen.getByRole("dialog");
     expect(within(dialog).queryByRole("button", { name: "Change name or number" })).toBeNull();
     expect(within(dialog).getAllByRole("switch").length).toBeGreaterThan(0);
+  });
+
+  it("buys a shop Buddy with tokens, puts it on, and updates the tokens", async () => {
+    fetchMock.mockImplementation(async (url: string) =>
+      url === "/api/me/buddy/buy"
+        ? new Response(JSON.stringify({ buddy_name: "Astronaut cat", tokens: 50 }), { status: 200 })
+        : new Response("{}", { status: 200 }),
+    );
+    const user = userEvent.setup();
+    render(<MeScreen data={data({ summary: { name: "Jordan", tokens: 150, buddyName: "Fox", nextReward: null } })} />);
+    await user.click(screen.getByRole("button", { name: "Change Buddy" }));
+    expect(screen.getByText("You have 150 tokens.")).toBeInTheDocument();
+
+    await user.click(screen.getByRole("button", { name: /Astronaut cat, 100 tokens, tap to buy/ }));
+    const dialog = screen.getByRole("dialog", { name: "Buy Astronaut cat?" });
+    expect(within(dialog).getByText(/You'll have 50 tokens left/)).toBeInTheDocument();
+    await user.click(within(dialog).getByRole("button", { name: "Not now" }));
+    expect(fetchMock).not.toHaveBeenCalled();
+
+    await user.click(screen.getByRole("button", { name: /Astronaut cat, 100 tokens, tap to buy/ }));
+    await user.click(screen.getByRole("button", { name: "Buy for 100 tokens" }));
+    expect(await screen.findByText("You got Astronaut cat! Astronaut cat is your Buddy now.")).toBeInTheDocument();
+    expect(bodyOf("/api/me/buddy/buy")).toEqual({ avatar_id: "cat" });
+    expect(screen.getByRole("button", { name: /Astronaut cat, your Buddy/ })).toHaveAttribute("aria-pressed", "true");
+    expect(screen.getByText("You have 50 tokens.")).toBeInTheDocument();
+    expect(getSettings().buddyName).toBe("Astronaut cat");
+  });
+
+  it("keeps the tokens and says why when buying fails", async () => {
+    fetchMock.mockImplementation(async () => new Response(JSON.stringify({ error: "You need 10 more tokens for Astronaut cat. Finish routines to earn more." }), { status: 402 }));
+    const user = userEvent.setup();
+    render(<MeScreen data={data({ summary: { name: "Jordan", tokens: 150, buddyName: "Fox", nextReward: null } })} />);
+    await user.click(screen.getByRole("button", { name: "Change Buddy" }));
+    await user.click(screen.getByRole("button", { name: /Astronaut cat, 100 tokens, tap to buy/ }));
+    await user.click(screen.getByRole("button", { name: "Buy for 100 tokens" }));
+    expect(await within(screen.getByRole("dialog")).findByRole("alert")).toHaveTextContent("You need 10 more tokens");
+    expect(screen.getByText("You have 150 tokens.")).toBeInTheDocument();
   });
 });
