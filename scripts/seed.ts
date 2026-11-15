@@ -87,7 +87,7 @@ async function main() {
   );
   console.log(`Test user ${user_id}: profile ready, Fox equipped`);
 
-  await seedLogins();
+  await seedLogins(fox._id);
 }
 
 // Demo logins, stored the way Better Auth stores them (src/lib/auth/server.ts).
@@ -96,9 +96,12 @@ async function main() {
 const DEMO_LOGINS = [
   { id: DEMO_USER_ID, name: "Jordan", email: "jordan@example.com", role: "user" },
   { id: "64b000000000000000000002", name: "Sam", email: "sam@example.com", role: "guardian" },
+  // Test users for the team. Empty accounts, set up like Jordan so they skip Welcome.
+  { id: "64b000000000000000000003", name: "George", email: "george@example.com", role: "user" },
+  { id: "64b000000000000000000004", name: "Nati", email: "nati@example.com", role: "user" },
 ] as const;
 
-async function seedLogins() {
+async function seedLogins(foxId: mongoose.Types.ObjectId) {
   const db = mongoose.connection.db;
   if (!db) throw new Error("Not connected");
   const password = await hashPassword(process.env.DEMO_PASSWORD || "bridge-demo-2026");
@@ -127,12 +130,21 @@ async function seedLogins() {
       },
       { upsert: true },
     );
+    // Test users start with a name and the Fox, so they go straight to Today.
+    if (login.role === "user" && login.id !== DEMO_USER_ID) {
+      await UserAvatarModel.findOneAndUpdate({ user_id: login.id, avatar_id: foxId }, { source: "starter" }, upsert);
+      await UserProfileModel.findOneAndUpdate(
+        { user_id: login.id },
+        { $set: { onboarded: true }, $setOnInsert: { name: login.name, equipped_avatar_id: foxId } },
+        upsert,
+      );
+    }
     console.log(`Login ready: ${login.email} (${login.role})`);
   }
 
   // Sam is Jordan's guardian in the demo. Jordan chose to share routines with Sam
   // (real links start with everything off; the user turns sharing on).
-  const [jordan, sam] = DEMO_LOGINS.map((l) => new mongoose.Types.ObjectId(l.id));
+  const [jordan, sam] = DEMO_LOGINS.slice(0, 2).map((l) => new mongoose.Types.ObjectId(l.id));
   await GuardianLinkModel.updateOne(
     { user_id: jordan, guardian_id: sam },
     { $set: { can_see_routines: true }, $setOnInsert: { created_at: now } },
