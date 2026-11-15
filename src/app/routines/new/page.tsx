@@ -7,9 +7,11 @@ export default function NewRoutinePage() {
     <main className={`${ui.page} space-y-6`}>
       <h1 className={ui.h1}>What do you need to do?</h1>
 
-      {/* "Tell Bridge" (AI) goes here as the main button once it's built. */}
-      <Link href={`/routines/new/${BLANK_TEMPLATE_ID}`} className={ui.primary}>
-        Make it myself
+      <Link href="/routines/new/ai" className={ui.primary}>
+        🎤 Tell Bridge
+      </Link>
+      <Link href={`/routines/new/${BLANK_TEMPLATE_ID}`} className={`${ui.secondary} w-full`}>
+        ✏️ Make it myself
       </Link>
 
       <section aria-labelledby="quick-start" className="space-y-3">

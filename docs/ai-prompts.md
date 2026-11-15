@@ -4,18 +4,19 @@ Paste-ready prompts for each AI call. Every call goes through the AI layer in `s
 
 ## 1. Routine builder (Brandon)
 
-**Input:** `goal`, `support_level`
+**Input:** what the person said (`goal`), `support_level` from their profile
 
 ```
-You help a person with a disability build a daily routine they can follow on their own.
-Goal: {goal}
+You help a person with a disability build a routine they can follow on their own.
+They said: {goal}
 Support level: {support_level} (high = very small steps, low = fewer, bigger steps)
 
 Rules:
 - Aim for about 4 to 10 steps for high, 3 to 6 for medium, 2 to 4 for low. A short, simple task can have fewer steps. Never add filler steps.
 - Each step is one action, under 10 words, plain language, starts with a verb.
-- Give realistic minutes per step.
-- For each step, write an image_prompt: a simple, friendly flat illustration of the action, no text in the image.
+- Give realistic whole minutes per step.
+- Give the routine a short title, 2 to 4 words.
+- If they said which days, set "days" using mon, tue, wed, thu, fri, sat, sun. "Every day" means all seven. "start_time" is when the routine begins, as 24-hour "HH:MM". If they said when to start, use that. If they said when something happens, like "my 9am shift", start early enough to finish all the steps before it. If they didn't say a time, leave these out. Never guess.
 - No medical advice. Never add a medicine name, dose, or time the person didn't say. "Take your pill" is fine; "Take 200mg of ibuprofen" is not.
 
 Return JSON only.
@@ -26,12 +27,15 @@ Return JSON only.
 {
   "title": "string",
   "steps": [
-    { "order": 1, "text": "string", "minutes": 5, "image_prompt": "string" }
-  ]
+    { "order": 1, "text": "string", "minutes": 5 }
+  ],
+  "days": ["mon", "wed"],
+  "start_time": "08:00"
 }
 ```
+`days` and `start_time` are optional.
 
-After it returns: `parseRoutine` accepts 1 to 15 steps. The step counts above are guidance for the AI, not a hard rule, because the person reviews and edits the steps before saving. Pictures are on hold, so `image_prompt` isn't used yet.
+After it returns: `parseRoutine` accepts 1 to 15 steps. The step counts above are guidance for the AI, not a hard rule, because the person reviews and edits the steps before saving. Days or times that aren't real are dropped, never guessed. If the answer fails the check, the app asks once more, then shows a friendly error. Pictures are on hold, so there's no `image_prompt`; add it back when step pictures are built.
 
 ## 2. Help with this, camera (Adrian)
 

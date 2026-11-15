@@ -1,18 +1,21 @@
 // Routine builder (owner: Brandon). Source: docs/ai-prompts.md section 1.
 
-import type { SupportLevel } from "@/lib/types";
+import { WEEKDAYS, type SupportLevel, type Weekday } from "@/lib/types";
 import { fail, fillTemplate, isNonEmptyString, isPositiveNumber, isRecord, ok, type ParseResult } from "./parse";
 
 export interface RoutineDraftStep {
   order: number;
   text: string;
   minutes: number;
-  image_prompt: string;
 }
 
 export interface RoutineDraft {
   title: string;
   steps: RoutineDraftStep[];
+  /** Only when the person said which days */
+  days?: Weekday[];
+  /** "HH:MM", only when the person said a time */
+  start_time?: string;
 }
 
 /**
@@ -30,15 +33,18 @@ export const STEP_TARGETS: Record<SupportLevel, { min: number; max: number }> = 
 export const MIN_STEPS = 1;
 export const MAX_STEPS = 15;
 
-const TEMPLATE = `You help a person with a disability build a daily routine they can follow on their own.
-Goal: {goal}
+const TIME_OF_DAY = /^([01]\d|2[0-3]):[0-5]\d$/;
+
+const TEMPLATE = `You help a person with a disability build a routine they can follow on their own.
+They said: {goal}
 Support level: {support_level} (high = very small steps, low = fewer, bigger steps)
 
 Rules:
 - Aim for about 4 to 10 steps for high, 3 to 6 for medium, 2 to 4 for low. A short, simple task can have fewer steps. Never add filler steps.
 - Each step is one action, under 10 words, plain language, starts with a verb.
-- Give realistic minutes per step.
-- For each step, write an image_prompt: a simple, friendly flat illustration of the action, no text in the image.
+- Give realistic whole minutes per step.
+- Give the routine a short title, 2 to 4 words.
+- If they said which days, set "days" using mon, tue, wed, thu, fri, sat, sun. "Every day" means all seven. "start_time" is when the routine begins, as 24-hour "HH:MM". If they said when to start, use that. If they said when something happens, like "my 9am shift", start early enough to finish all the steps before it. If they didn't say a time, leave these out. Never guess.
 - No medical advice. Never add a medicine name, dose, or time the person didn't say. "Take your pill" is fine; "Take 200mg of ibuprofen" is not.
 
 Return JSON only.`;
@@ -59,16 +65,21 @@ export const routineSchema = {
           order: { type: "number" },
           text: { type: "string" },
           minutes: { type: "number" },
-          image_prompt: { type: "string" },
         },
-        required: ["order", "text", "minutes", "image_prompt"],
+        required: ["order", "text", "minutes"],
       },
     },
+    days: { type: "array", items: { type: "string", enum: [...WEEKDAYS] } },
+    start_time: { type: "string" },
   },
   required: ["title", "steps"],
 } as const;
 
-/** Checks the AI's routine. Steps come back sorted and numbered 1, 2, 3... */
+/**
+ * Checks the AI's routine. Steps come back sorted and numbered 1, 2, 3...
+ * Days and time are optional: anything that isn't a real day or time is
+ * dropped instead of guessed.
+ */
 export function parseRoutine(raw: unknown): ParseResult<RoutineDraft> {
   if (!isRecord(raw)) return fail("Response is not an object");
   if (!isNonEmptyString(raw.title)) return fail("Missing title");
@@ -79,12 +90,10 @@ export function parseRoutine(raw: unknown): ParseResult<RoutineDraft> {
     if (!isRecord(step)) return fail(`Step ${i + 1} is not an object`);
     if (!isNonEmptyString(step.text)) return fail(`Step ${i + 1} is missing text`);
     if (!isPositiveNumber(step.minutes)) return fail(`Step ${i + 1} is missing minutes`);
-    if (!isNonEmptyString(step.image_prompt)) return fail(`Step ${i + 1} is missing image_prompt`);
     steps.push({
       order: typeof step.order === "number" ? step.order : i + 1,
       text: step.text.trim(),
       minutes: step.minutes,
-      image_prompt: step.image_prompt.trim(),
     });
   }
 
@@ -95,5 +104,15 @@ export function parseRoutine(raw: unknown): ParseResult<RoutineDraft> {
   steps.sort((a, b) => a.order - b.order);
   steps.forEach((step, i) => (step.order = i + 1));
 
-  return ok({ title: raw.title.trim(), steps });
+  const draft: RoutineDraft = { title: raw.title.trim(), steps };
+
+  if (Array.isArray(raw.days)) {
+    const days = WEEKDAYS.filter((d) => (raw.days as unknown[]).includes(d));
+    if (days.length > 0) draft.days = days;
+  }
+  if (typeof raw.start_time === "string" && TIME_OF_DAY.test(raw.start_time.trim())) {
+    draft.start_time = raw.start_time.trim();
+  }
+
+  return ok(draft);
 }

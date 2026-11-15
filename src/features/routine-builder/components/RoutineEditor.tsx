@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useReducer, useRef, useState } from "react";
+import { useEffect, useReducer, useRef, useState, type ReactNode } from "react";
 import { ReadAloudButton } from "@/components/ReadAloudButton";
 import { WEEKDAYS } from "@/lib/types";
 import { editorReducer, toEditorState, toRoutineInput } from "../editorState";
@@ -17,11 +17,13 @@ interface Props {
   onSave: (routine: RoutineInput) => Promise<SaveResult>;
   /** Only when editing a saved routine */
   onDelete?: () => Promise<void>;
+  /** Extra controls under the steps, e.g. "Smaller steps" on the AI path */
+  stepsExtra?: ReactNode;
 }
 
 type Screen = "steps" | "schedule";
 
-export function RoutineEditor({ initial, heading, onSave, onDelete }: Props) {
+export function RoutineEditor({ initial, heading, onSave, onDelete, stepsExtra }: Props) {
   const [state, dispatch] = useReducer(editorReducer, initial, toEditorState);
   const [screen, setScreen] = useState<Screen>("steps");
   const [errors, setErrors] = useState<RoutineErrors>({});
@@ -182,6 +184,7 @@ export function RoutineEditor({ initial, heading, onSave, onDelete }: Props) {
                 + Add a step
               </button>
             )}
+            {stepsExtra}
           </div>
 
           {message && (

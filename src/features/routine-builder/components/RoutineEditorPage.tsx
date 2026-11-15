@@ -1,6 +1,7 @@
 "use client";
 
 import { useRouter } from "next/navigation";
+import type { ReactNode } from "react";
 import type { RoutineInput } from "../routineInput";
 import { RoutineEditor, type SaveResult } from "./RoutineEditor";
 
@@ -9,10 +10,11 @@ interface Props {
   heading: string;
   /** Set when editing a saved routine */
   routineId?: string;
+  stepsExtra?: ReactNode;
 }
 
 /** Connects the editor to the routines API and goes back to the list after saving. */
-export function RoutineEditorPage({ initial, heading, routineId }: Props) {
+export function RoutineEditorPage({ initial, heading, routineId, stepsExtra }: Props) {
   const router = useRouter();
 
   function backToList() {
@@ -41,5 +43,13 @@ export function RoutineEditorPage({ initial, heading, routineId }: Props) {
     if (response.ok || response.status === 404) backToList();
   }
 
-  return <RoutineEditor initial={initial} heading={heading} onSave={save} onDelete={routineId ? remove : undefined} />;
+  return (
+    <RoutineEditor
+      initial={initial}
+      heading={heading}
+      onSave={save}
+      onDelete={routineId ? remove : undefined}
+      stepsExtra={stepsExtra}
+    />
+  );
 }

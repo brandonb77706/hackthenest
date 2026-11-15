@@ -1,16 +1,23 @@
-import { describe, expect, it } from "vitest";
-import { ai } from "./index";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { activeProvider, ai } from "./index";
 import { AI_CONFIG, type AIFeature } from "./models";
 import { parseCameraHelp } from "./prompts/cameraHelp";
 import { parseRoutine } from "./prompts/routineBuilder";
 import { parseSpeakForMe } from "./prompts/speakForMe";
 import { parseStuckHelp } from "./prompts/stuckHelp";
-import { createBase44Provider } from "./providers/base44";
 import { fakeProvider } from "./providers/mock";
 
 const input = { prompt: "test", schema: {} };
 
 describe("ai.forFeature", () => {
+  // Pin "Base44 not set up" so these always get the sample answers.
+  beforeEach(() => {
+    vi.spyOn(console, "warn").mockImplementation(() => {});
+    vi.stubEnv("NEXT_PUBLIC_BASE44_APP_ID", "");
+    vi.stubEnv("BASE44_APP_ID", "");
+  });
+  afterEach(() => vi.unstubAllEnvs());
+
   it("returns a provider for every configured feature", () => {
     for (const feature of Object.keys(AI_CONFIG) as AIFeature[]) {
       const provider = ai.forFeature(feature);
@@ -58,10 +65,23 @@ describe("fakeProvider", () => {
   });
 });
 
-describe("base44 provider", () => {
-  it("fails clearly until Base44 is connected", async () => {
-    const provider = createBase44Provider({ feature: "routineBuilder", model: "x" });
-    await expect(provider.generateText({ prompt: "x" })).rejects.toThrow(/isn't connected yet/);
-    await expect(provider.generateJSON(input)).rejects.toThrow(/routineBuilder/);
+describe("activeProvider", () => {
+  afterEach(() => vi.unstubAllEnvs());
+
+  it("uses Base44 for the routine builder when an app id is set", () => {
+    vi.stubEnv("NEXT_PUBLIC_BASE44_APP_ID", "app123");
+    expect(activeProvider("routineBuilder")).toBe("base44");
+  });
+
+  it("falls back to sample answers when Base44 isn't set up, so the app still runs", () => {
+    vi.spyOn(console, "warn").mockImplementation(() => {});
+    vi.stubEnv("NEXT_PUBLIC_BASE44_APP_ID", "");
+    vi.stubEnv("BASE44_APP_ID", "");
+    expect(activeProvider("routineBuilder")).toBe("mock");
+  });
+
+  it("keeps features on the mock until they're switched", () => {
+    vi.stubEnv("NEXT_PUBLIC_BASE44_APP_ID", "app123");
+    expect(activeProvider("cameraHelp")).toBe("mock");
   });
 });

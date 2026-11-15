@@ -10,11 +10,13 @@ export const MOCK_JSON: Partial<Record<AIFeature, unknown>> = {
   routineBuilder: {
     title: "Get ready for work",
     steps: [
-      { order: 1, text: "Brush your teeth", minutes: 3, image_prompt: "A person brushing their teeth at a sink" },
-      { order: 2, text: "Put on your work shirt", minutes: 5, image_prompt: "A person putting on a work shirt" },
-      { order: 3, text: "Eat a quick breakfast", minutes: 10, image_prompt: "A bowl of cereal on a kitchen table" },
-      { order: 4, text: "Pack your bag and keys", minutes: 3, image_prompt: "A bag and a set of keys by a door" },
+      { order: 1, text: "Brush your teeth", minutes: 3 },
+      { order: 2, text: "Put on your work shirt", minutes: 5 },
+      { order: 3, text: "Eat a quick breakfast", minutes: 10 },
+      { order: 4, text: "Pack your bag and keys", minutes: 3 },
     ],
+    days: ["mon", "tue", "wed", "thu", "fri"],
+    start_time: "08:00",
   } satisfies RoutineDraft,
   cameraHelp: {
     what_it_is: "This is an electric bill.",

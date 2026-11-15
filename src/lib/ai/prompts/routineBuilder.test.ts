@@ -5,7 +5,6 @@ const step = (order: number, text = `Step ${order}`) => ({
   order,
   text,
   minutes: 5,
-  image_prompt: `Picture of step ${order}`,
 });
 
 const routine = (count: number) => ({
@@ -14,11 +13,16 @@ const routine = (count: number) => ({
 });
 
 describe("buildRoutinePrompt", () => {
-  it("includes the goal and support level", () => {
+  it("includes what they said and the support level", () => {
     const prompt = buildRoutinePrompt({ goal: "  Get ready for my 9am shift ", supportLevel: "high" });
-    expect(prompt).toContain("Goal: Get ready for my 9am shift\n");
+    expect(prompt).toContain("They said: Get ready for my 9am shift\n");
     expect(prompt).toContain("Support level: high");
     expect(prompt).not.toMatch(/\{\w+\}/);
+  });
+
+  it("tells the AI to finish before an event, not start at it", () => {
+    const prompt = buildRoutinePrompt({ goal: "get ready for my 9am shift", supportLevel: "low" });
+    expect(prompt).toMatch(/start early enough to finish all the steps before it/);
   });
 
   it("tells the AI not to invent medicine names or doses", () => {
@@ -66,13 +70,34 @@ describe("parseRoutine", () => {
     expect(parseRoutine({ steps: routine(3).steps }).ok).toBe(false);
     expect(parseRoutine({ title: "T" }).ok).toBe(false);
 
-    for (const field of ["text", "minutes", "image_prompt"] as const) {
+    for (const field of ["text", "minutes"] as const) {
       const raw = routine(3);
       delete (raw.steps[1] as Partial<ReturnType<typeof step>>)[field];
       const result = parseRoutine(raw);
       expect(result.ok).toBe(false);
       expect(!result.ok && result.error).toContain(field);
     }
+  });
+
+  it("keeps days and time when the AI sends real ones", () => {
+    const result = parseRoutine({ ...routine(2), days: ["fri", "mon"], start_time: "08:30" });
+    expect(result.ok && result.value.days).toEqual(["mon", "fri"]);
+    expect(result.ok && result.value.start_time).toBe("08:30");
+  });
+
+  it("leaves days and time out when they're missing or made up, instead of guessing", () => {
+    const missing = parseRoutine(routine(2));
+    expect(missing.ok && missing.value).not.toHaveProperty("days");
+    expect(missing.ok && missing.value).not.toHaveProperty("start_time");
+
+    const bad = parseRoutine({ ...routine(2), days: ["monday", 3], start_time: "8am" });
+    expect(bad.ok).toBe(true);
+    expect(bad.ok && bad.value).not.toHaveProperty("days");
+    expect(bad.ok && bad.value).not.toHaveProperty("start_time");
+  });
+
+  it("doesn't need image prompts while pictures are on hold", () => {
+    expect(parseRoutine({ title: "T", steps: [{ order: 1, text: "Do it", minutes: 2 }] }).ok).toBe(true);
   });
 
   it("rejects zero or negative minutes", () => {

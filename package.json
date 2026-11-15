@@ -12,6 +12,7 @@
     "db:seed": "tsx --env-file=.env.local scripts/seed.ts"
   },
   "dependencies": {
+    "@base44/sdk": "^0.8.61",
     "mongoose": "^9.12.1",
     "next": "16.4.6",
     "react": "19.3.0",

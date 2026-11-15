@@ -64,7 +64,8 @@ docs/                   project docs
 - `prompts/`: prompt builders, one per feature, copied from `docs/ai-prompts.md`.
 - Features call `ai.forFeature('routineBuilder').generateJSON(...)` and never call a provider directly.
 - Use structured JSON output whenever code reads the result, and check the shape before saving.
-- Base44 AI: `base44.integrations.Core.InvokeLLM({ prompt, response_json_schema, file_urls, model })`. Valid `model` values are in `node_modules/@base44/sdk/dist/modules/integrations.types.d.ts` once `@base44/sdk` is installed. Read that list instead of guessing.
+- Base44 AI (`providers/base44.ts`): Base44 blocks outside apps from calling `InvokeLLM` directly, so our server calls the Base44 backend function `invokeLLM` (source in `base44/functions/invokeLLM.ts`), which calls `InvokeLLM` with the service role. It needs `NEXT_PUBLIC_BASE44_APP_ID` and `BASE44_FUNCTION_SECRET` (must match `BRIDGE_FUNCTION_SECRET` in Base44). If you change the function, paste it into Base44 and publish. Model `"default"` uses the Base44 app's setting; to pin one, pick from the list in `node_modules/@base44/sdk/dist/modules/integrations.types.d.ts`. Read that list instead of guessing.
+- A feature set to `"base44"` uses the mock when no Base44 app id is set, so the app runs without Base44. Calls use the Base44 app's shared AI credits.
 
 ## Testing
 
