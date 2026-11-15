@@ -30,9 +30,11 @@ A "streak day" = at least one routine finished that day.
 
 | Type | How you get it | Examples |
 | --- | --- | --- |
-| Starter | Free at signup, pick 1 of 3 | Fox, robot, cloud |
-| Shop | Buy with tokens, 50 to 300 | Astronaut cat, chef bear, skater owl |
-| Streak exclusive | Reach a streak length, can't be bought | 7 days: bronze star buddy; 14: silver dragon; 30: gold phoenix |
+| Starter | Free at signup, pick 1 of 3 | Fox (the main Buddy), penguin, beaver |
+| Shop | Buy with tokens, 120 to 300 | Frog 120, owl 200, cat 300 |
+| Streak exclusive | Reach a streak length, can't be bought | 7 days: turtle; 14: bunny |
+
+Every Buddy is drawn in `src/components/bridge/BuddyAvatar.tsx` (from the design), so only add a Buddy once it has a drawing.
 
 Generate the whole catalog ahead of time with image generation through the AI layer (prompt in `ai-prompts.md`) so the shop loads instantly. Keep 10 to 15 avatars for the hackathon.
 

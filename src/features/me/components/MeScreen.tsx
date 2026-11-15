@@ -9,6 +9,7 @@ import { useEffect, useRef, useState, useSyncExternalStore } from "react";
 import { BuddyAvatar } from "@/components/bridge/BuddyAvatar";
 import { Dialog } from "@/components/bridge/Dialog";
 import { CoinIcon, Icon } from "@/components/bridge/Icon";
+import { SchemeCard } from "@/components/bridge/SchemeCard";
 import { Switch } from "@/components/bridge/Switch";
 import { br } from "@/components/bridge/styles";
 import {
@@ -347,63 +348,9 @@ export function MeScreen({ data }: { data: MeData }) {
               aria-label="Color scheme"
               className="flex flex-col gap-3.5"
             >
-              {COLOR_SCHEMES.map((s) => {
-                const on = s.id === scheme;
-                return (
-                  <button
-                    key={s.id}
-                    type="button"
-                    role="radio"
-                    aria-checked={on}
-                    onClick={() => pickScheme(s.id)}
-                    className={`br-press flex flex-col overflow-hidden rounded-[20px] p-0 text-left ${on ? "border-[3px] border-switch-on" : "border-2 border-line"}`}
-                    style={{
-                      background: s.preview.canvas,
-                      color: s.preview.ink,
-                    }}
-                  >
-                    <span
-                      className="box-border flex w-full items-center justify-between gap-2.5 px-4 py-3.5"
-                      style={{
-                        background: s.preview.hero,
-                        color: s.preview.heroInk,
-                      }}
-                    >
-                      <strong className="font-display text-[19px] font-bold leading-tight">
-                        {s.name}
-                      </strong>
-                      <span
-                        aria-hidden="true"
-                        className="flex shrink-0 gap-[5px]"
-                      >
-                        {s.swatches.map((c) => (
-                          <span
-                            key={c}
-                            className="size-[22px] rounded-full border-2 border-white/85 shadow-[0_0_0_1px_rgba(0,0,0,0.18)]"
-                            style={{ background: c }}
-                          />
-                        ))}
-                      </span>
-                    </span>
-                    <span className="flex flex-col gap-1 px-4 pb-3.5 pt-3">
-                      <span className="text-[15px] font-bold">
-                        For: {s.who}
-                      </span>
-                      <span
-                        className="text-[15px] leading-[1.35]"
-                        style={{ color: s.preview.ink2 }}
-                      >
-                        {s.description}
-                      </span>
-                      {on && (
-                        <span className="mt-1 self-start rounded-full bg-switch-on px-2.5 py-0.5 text-[15px] font-bold text-knob">
-                          In use
-                        </span>
-                      )}
-                    </span>
-                  </button>
-                );
-              })}
+              {COLOR_SCHEMES.map((s) => (
+                <SchemeCard key={s.id} scheme={s} selected={s.id === scheme} onPick={pickScheme} />
+              ))}
             </div>
           </>
         )}

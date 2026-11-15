@@ -22,17 +22,16 @@ import {
 } from "@/lib/db";
 import type { Avatar } from "@/lib/types";
 
-// From docs/rewards.md. Images are placeholders until the catalog is generated.
+// From docs/rewards.md. Every Buddy has a drawing in BuddyAvatar (from the design).
 const AVATARS: Omit<Avatar, "id">[] = [
   { name: "Fox", unlock_type: "starter", price: null, streak_required: null, image_url: "/avatars/fox.png" },
-  { name: "Robot", unlock_type: "starter", price: null, streak_required: null, image_url: "/avatars/robot.png" },
-  { name: "Cloud", unlock_type: "starter", price: null, streak_required: null, image_url: "/avatars/cloud.png" },
-  { name: "Astronaut cat", unlock_type: "shop", price: 100, streak_required: null, image_url: "/avatars/astronaut-cat.png" },
-  { name: "Chef bear", unlock_type: "shop", price: 150, streak_required: null, image_url: "/avatars/chef-bear.png" },
-  { name: "Skater owl", unlock_type: "shop", price: 300, streak_required: null, image_url: "/avatars/skater-owl.png" },
-  { name: "Bronze star buddy", unlock_type: "streak", price: null, streak_required: 7, image_url: "/avatars/bronze-star-buddy.png" },
-  { name: "Silver dragon", unlock_type: "streak", price: null, streak_required: 14, image_url: "/avatars/silver-dragon.png" },
-  { name: "Gold phoenix", unlock_type: "streak", price: null, streak_required: 30, image_url: "/avatars/gold-phoenix.png" },
+  { name: "Penguin", unlock_type: "starter", price: null, streak_required: null, image_url: "/avatars/penguin.png" },
+  { name: "Beaver", unlock_type: "starter", price: null, streak_required: null, image_url: "/avatars/beaver.png" },
+  { name: "Frog", unlock_type: "shop", price: 120, streak_required: null, image_url: "/avatars/frog.png" },
+  { name: "Owl", unlock_type: "shop", price: 200, streak_required: null, image_url: "/avatars/owl.png" },
+  { name: "Cat", unlock_type: "shop", price: 300, streak_required: null, image_url: "/avatars/cat.png" },
+  { name: "Turtle", unlock_type: "streak", price: null, streak_required: 7, image_url: "/avatars/turtle.png" },
+  { name: "Bunny", unlock_type: "streak", price: null, streak_required: 14, image_url: "/avatars/bunny.png" },
 ];
 
 const ALL_MODELS = [
@@ -62,6 +61,15 @@ async function main() {
   for (const avatar of AVATARS) {
     await AvatarModel.findOneAndUpdate({ name: avatar.name }, avatar, upsert);
   }
+  // Remove Buddies no longer in the catalog (they had no drawing), and anyone's copy of them.
+  const removed = await AvatarModel.find({ name: { $nin: AVATARS.map((a) => a.name) } });
+  if (removed.length > 0) {
+    const ids = removed.map((a) => a._id);
+    await UserAvatarModel.deleteMany({ avatar_id: { $in: ids } }).setOptions({ allUsers: true });
+    await UserProfileModel.updateMany({ equipped_avatar_id: { $in: ids } }, { $set: { equipped_avatar_id: null } }).setOptions({ allUsers: true });
+    await AvatarModel.deleteMany({ _id: { $in: ids } });
+    console.log(`Removed old Buddies: ${removed.map((a) => a.name).join(", ")}`);
+  }
   console.log(`Avatar catalog: ${AVATARS.length} avatars`);
 
   const fox = await AvatarModel.findOne({ name: "Fox" }).orFail();
@@ -70,7 +78,7 @@ async function main() {
   await UserAvatarModel.findOneAndUpdate({ user_id, avatar_id: fox._id }, { source: "starter" }, upsert);
   await UserProfileModel.findOneAndUpdate(
     { user_id },
-    { $set: { equipped_avatar_id: fox._id }, $setOnInsert: { name: "Jordan" } },
+    { $set: { equipped_avatar_id: fox._id, onboarded: true }, $setOnInsert: { name: "Jordan" } },
     upsert,
   );
   console.log(`Test user ${user_id}: profile ready, Fox equipped`);

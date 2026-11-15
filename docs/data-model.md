@@ -39,6 +39,7 @@ const routines = docs.map((d) => toRecord<Routine>(d));
 | equipped_avatar_id | reference | Avatar shown as the guide |
 | color_scheme | enum: blue, autism, adhd, down, dyslexia, epilepsy, colorblind, calm, contrast | Default blue. See `src/lib/theme.ts` |
 | show_buddy | boolean | Show the Buddy on the tab bar. Default true |
+| onboarded | boolean | Finished Welcome (name, Buddy) after the first sign-in. Default false |
 
 ## Routine
 | Field | Type | Notes |

@@ -19,6 +19,8 @@ const fields = {
   equipped_avatar_id: { type: ObjectId, ref: "Avatar", default: null },
   color_scheme: { type: String, enum: COLOR_SCHEME_IDS, default: DEFAULT_COLOR_SCHEME },
   show_buddy: { type: Boolean, default: true },
+  // False until the user finishes Welcome (name, Buddy).
+  onboarded: { type: Boolean, default: false },
 } satisfies Fields<UserProfile>;
 
 const schema = new Schema(fields, schemaOptions);

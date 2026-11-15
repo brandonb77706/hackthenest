@@ -44,6 +44,8 @@ export interface UserProfile extends Owned {
   color_scheme: string;
   /** Show the Buddy on the tab bar */
   show_buddy: boolean;
+  /** True once Welcome (name, Buddy) is finished after the first sign-in */
+  onboarded: boolean;
 }
 
 export interface Routine extends Owned {
