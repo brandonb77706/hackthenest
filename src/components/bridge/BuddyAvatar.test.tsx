@@ -8,6 +8,7 @@ describe("buddyArt", () => {
     expect(buddyArt("Fox")).toBe("fox");
     expect(buddyArt("Skater owl")).toBe("owl");
     expect(buddyArt("Astronaut cat")).toBe("cat");
+    for (const art of ["Beaver", "Penguin", "Frog", "Turtle", "Bunny"]) expect(buddyArt(art)).toBe(art.toLowerCase());
   });
 
   it("returns null when there is no drawing, so the first letter shows instead", () => {

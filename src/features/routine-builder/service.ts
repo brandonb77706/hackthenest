@@ -43,8 +43,11 @@ export async function getRoutine(userId: ID, routineId: string): Promise<Routine
   return { ...toRecord<Routine>(routine), steps: steps.map((s) => toRecord<Step>(s)) };
 }
 
-/** Saves the routine and all its steps together. If anything fails, nothing is saved. */
-export async function createRoutine(userId: ID, input: RoutineInput): Promise<RoutineWithSteps> {
+/**
+ * Saves the routine and all its steps together. If anything fails, nothing is saved.
+ * addedBy is set when a guardian adds it for the user.
+ */
+export async function createRoutine(userId: ID, input: RoutineInput, addedBy: ID | null = null): Promise<RoutineWithSteps> {
   await connectDB();
   const routineId = await mongoose.connection.transaction(async (session) => {
     const [routine] = await RoutineModel.create(
@@ -57,6 +60,7 @@ export async function createRoutine(userId: ID, input: RoutineInput): Promise<Ro
           start_time: input.start_time,
           tone: input.tone,
           remind: input.remind,
+          added_by: addedBy,
         },
       ],
       { session },

@@ -4,6 +4,8 @@
 //   pick a way → say it / type it → making → check your steps → when → ready
 // Also edits a saved routine (starts at "check your steps").
 
+import { ChallengeDone } from "@/features/rewards/components/ChallengeDone";
+import type { ChallengeStatus } from "@/features/rewards/challenges";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useReducer, useRef, useState } from "react";
@@ -26,6 +28,17 @@ interface Props {
   /** Set to edit a saved routine. Leave out to make a new one. */
   routineId?: string;
   initial?: RoutineInput;
+  /**
+   * Set when a guardian makes or changes a routine for someone (the guardian view).
+   * Leave out for the user's own routines.
+   */
+  forPerson?: {
+    name: string;
+    /** Where routines are saved, e.g. /api/guardian/people/<id>/routines */
+    api: string;
+    /** Where to go when done or closed, e.g. /guardian/<id>/routines */
+    back: string;
+  };
 }
 
 const STAGE_PART: Record<Stage, number> = { pick: 0, voice: 0, type: 0, making: 0, review: 1, when: 2, done: 3 };
@@ -76,7 +89,9 @@ function firstError(errors: RoutineErrors): string {
   return errors.title ?? errors.steps ?? step?.text ?? step?.minutes ?? errors.days ?? errors.start_time ?? "";
 }
 
-export function Builder({ routineId, initial }: Props) {
+export function Builder({ routineId, initial, forPerson }: Props) {
+  const api = forPerson?.api ?? "/api/routines";
+  const back = forPerson?.back ?? "/routines";
   const router = useRouter();
   const buddyName = useBuddyName();
   const editing = Boolean(routineId);
@@ -88,6 +103,8 @@ export function Builder({ routineId, initial }: Props) {
   /** Set when the steps came from Bridge, so "Want different steps?" can redo them. */
   const [draftLevel, setDraftLevel] = useState<SupportLevel | null>(null);
   const [savedId, setSavedId] = useState<string | null>(null);
+  /** Daily challenges that saving this routine finished */
+  const [challengesDone, setChallengesDone] = useState<ChallengeStatus[]>([]);
   const [confirmDelete, setConfirmDelete] = useState(false);
   const headingRef = useRef<HTMLHeadingElement>(null);
 
@@ -200,7 +217,10 @@ export function Builder({ routineId, initial }: Props) {
     setBusy(true);
     setError("");
     try {
-      const response = await fetch(routineId ? `/api/routines/${routineId}` : "/api/routines", {
+      // The time zone makes the new-routine challenge count the person's own day.
+      const tz = Intl.DateTimeFormat().resolvedOptions().timeZone || "UTC";
+      const url = routineId ? `${api}/${routineId}` : forPerson ? api : `${api}?tz=${encodeURIComponent(tz)}`;
+      const response = await fetch(url, {
         method: routineId ? "PATCH" : "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(result.value),
@@ -214,9 +234,11 @@ export function Builder({ routineId, initial }: Props) {
         );
         return;
       }
-      const body = (await response.json()) as { routine: { id: string } };
-      if (editing) {
-        router.push("/routines");
+      const body = (await response.json()) as { routine: { id: string }; challenges?: ChallengeStatus[] };
+      setChallengesDone(body.challenges ?? []);
+      // A guardian goes back to the person's routines; "Start it now" is for the person.
+      if (editing || forPerson) {
+        router.push(back);
         router.refresh();
         return;
       }
@@ -232,10 +254,10 @@ export function Builder({ routineId, initial }: Props) {
   async function remove() {
     if (!routineId) return;
     setBusy(true);
-    const response = await fetch(`/api/routines/${routineId}`, { method: "DELETE" }).catch(() => null);
+    const response = await fetch(`${api}/${routineId}`, { method: "DELETE" }).catch(() => null);
     setBusy(false);
     if (response && (response.ok || response.status === 404)) {
-      router.push("/routines");
+      router.push(back);
       router.refresh();
     } else {
       setError("Couldn't delete. Check your internet and try again.");
@@ -246,7 +268,7 @@ export function Builder({ routineId, initial }: Props) {
 
   const bar =
     stage === "review"
-      ? { primary: "Next", onPrimary: nextFromReview, secondary: editing ? "Cancel" : "Back", onSecondary: () => (editing ? router.push("/routines") : go("pick")) }
+      ? { primary: "Next", onPrimary: nextFromReview, secondary: editing ? "Cancel" : "Back", onSecondary: () => (editing ? router.push(back) : go("pick")) }
       : stage === "when"
         ? { primary: busy ? "Saving…" : "Save routine", onPrimary: save, secondary: "Back to steps", onSecondary: () => go("review") }
         : stage === "done"
@@ -258,7 +280,7 @@ export function Builder({ routineId, initial }: Props) {
       {/* Header: close, progress, count */}
       <div className="sticky top-0 z-10 flex items-center gap-3.5 bg-canvas pb-2 pl-3.5 pr-[18px] pt-[22px]">
         <Link
-          href="/routines"
+          href={back}
           aria-label="Close without saving"
           className="flex size-12 shrink-0 items-center justify-center text-ink2"
         >
@@ -287,7 +309,7 @@ export function Builder({ routineId, initial }: Props) {
         {stage === "pick" && (
           <>
             <h1 ref={headingRef} tabIndex={-1} className={br.h1}>
-              Make a new routine
+              {forPerson ? `Make a routine for ${forPerson.name}` : "Make a new routine"}
             </h1>
             <p className="-mt-1.5 mb-1 text-ink2">How do you want to make it?</p>
             {WAYS.map((w) => (
@@ -312,9 +334,11 @@ export function Builder({ routineId, initial }: Props) {
             ))}
             <h2 className={`${br.h2} mt-1.5`}>Quick start</h2>
             <div className="grid grid-cols-2 gap-2.5">
-              <Link href="/groceries" className={`${br.ghost} flex min-h-14 items-center justify-center rounded-2xl px-2.5 py-1.5 text-center text-[16px] leading-tight no-underline`}>
-                Grocery shopping
-              </Link>
+              {!forPerson && (
+                <Link href="/groceries" className={`${br.ghost} flex min-h-14 items-center justify-center rounded-2xl px-2.5 py-1.5 text-center text-[16px] leading-tight no-underline`}>
+                  Grocery shopping
+                </Link>
+              )}
               {TEMPLATES.map((t) => (
                 <button
                   key={t.id}
@@ -750,6 +774,7 @@ export function Builder({ routineId, initial }: Props) {
             <p className="m-0 text-[19px] text-ink2">
               {formatStepCount(cleaned().steps.length)} · {formatDays(state.days)} at {formatTime(state.start_time)}
             </p>
+            <ChallengeDone challenges={challengesDone} />
           </div>
         )}
       </div>

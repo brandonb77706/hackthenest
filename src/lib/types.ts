@@ -44,6 +44,8 @@ export interface UserProfile extends Owned {
   color_scheme: string;
   /** Show the Buddy on the tab bar */
   show_buddy: boolean;
+  /** True once Welcome (name, Buddy) is finished after the first sign-in */
+  onboarded: boolean;
 }
 
 export interface Routine extends Owned {
@@ -59,6 +61,8 @@ export interface Routine extends Owned {
   tone: RoutineTone;
   /** Show check-ins for this routine */
   remind: boolean;
+  /** A guardian who added it for the user, or null if the user made it */
+  added_by: ID | null;
 }
 
 export interface Step extends Owned {
@@ -123,6 +127,55 @@ export interface TrustedContact extends Owned, TrustedContactPermissions {
   contact: string;
   /** Who they are to the user, like "Your brother". Shown under their name */
   relation: string;
+  /** A guardian who added them for the user, or null if the user did */
+  added_by: ID | null;
+}
+
+/**
+ * A guardian (parent, aide, job coach) linked to a user. The accounts stay
+ * separate. The guardian sees only what the user shares, and sharing starts off.
+ */
+export interface GuardianLink extends TrustedContactPermissions {
+  id: ID;
+  /** The person using Bridge */
+  user_id: ID;
+  /** Their guardian's account */
+  guardian_id: ID;
+  /** Set by the guardian. On by default: the user makes and changes their own routines */
+  user_can_edit_routines: boolean;
+  /** Set by the guardian. On by default: the user adds and changes their own trusted contacts */
+  user_can_edit_contacts: boolean;
+  created_at: string;
+}
+
+/** Who made a setup code. The other side enters it. */
+export const SETUP_CODE_FROM = ["user", "guardian"] as const;
+export type SetupCodeFrom = (typeof SETUP_CODE_FROM)[number];
+
+/** A one-time code that links a user and a guardian. Lasts 24 hours, works once. */
+export interface SetupCode {
+  id: ID;
+  code: string;
+  from_role: SetupCodeFrom;
+  created_by: ID;
+  /** A guardian setting Bridge up for someone types their name, so Welcome can fill it in */
+  name: string | null;
+  expires_at: string;
+  used_at: string | null;
+  used_by: ID | null;
+}
+
+export const CHALLENGE_IDS = ["all_routines", "scans", "new_routine"] as const;
+export type ChallengeId = (typeof CHALLENGE_IDS)[number];
+
+/** A daily challenge the user finished. One per challenge per day, so it pays once. */
+export interface DailyChallenge extends Owned {
+  id: ID;
+  challenge: ChallengeId;
+  /** "YYYY-MM-DD" in the user's day */
+  date: string;
+  tokens: number;
+  completed_at: string;
 }
 
 export const REMINDER_SOURCES = ["routine", "camera"] as const;
@@ -171,7 +224,7 @@ export interface UserAvatar extends Owned {
   unlocked_at: string;
 }
 
-export const TOKEN_REASONS = ["step", "routine", "camera", "first_routine", "streak", "purchase"] as const;
+export const TOKEN_REASONS = ["step", "routine", "camera", "first_routine", "streak", "challenge", "purchase"] as const;
 export type TokenReason = (typeof TOKEN_REASONS)[number];
 
 /** Only server code writes these. Balance = sum of the user's transactions. */

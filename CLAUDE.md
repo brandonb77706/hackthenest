@@ -20,8 +20,8 @@ Bridge is a hackathon app (track: "Best use of Base44 AI", community vote). It g
 ## Stack
 
 - **Frontend:** Next.js (App Router, TypeScript, Tailwind). This is a recent Next.js version, so check `node_modules/next/dist/docs/` before using an API you're unsure of (see AGENTS.md).
-- **Database:** MongoDB Atlas through Mongoose, from server code only. Models are in `src/lib/db/models/`, and every query on an owned model must filter by `user_id` (a guard enforces it). No login yet: use `getCurrentUserId()`, never a hardcoded id.
-- **Other backend pieces** (file storage, scheduling, auth) aren't decided. When a task needs one of those choices, ask instead of picking one.
+- **Database:** MongoDB Atlas through Mongoose, from server code only. Models are in `src/lib/db/models/`, and every query on an owned model must filter by `user_id` (a guard enforces it). Login is Better Auth (`src/lib/auth/`): use `getCurrentUserId()` for the signed-in user, never a hardcoded id. `npm run db:seed` creates the demo logins (see `scripts/seed.ts`).
+- **Other backend pieces** (file storage, scheduling) aren't decided. When a task needs one of those choices, ask instead of picking one.
 - **AI:** Base44 AI plus other providers. Every AI call goes through `src/lib/ai/` (below), so providers can be swapped without touching features.
 - **Voice:** ElevenLabs, called from server-side code only.
 - **Later:** the app is built in VS Code first and connected to Base44 after the features work. Keep Base44 behind wrappers (`src/lib/ai/providers/base44.ts`, data helpers in `src/lib/`) so connecting it doesn't touch feature code.

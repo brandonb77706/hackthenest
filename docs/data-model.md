@@ -39,6 +39,7 @@ const routines = docs.map((d) => toRecord<Routine>(d));
 | equipped_avatar_id | reference | Avatar shown as the guide |
 | color_scheme | enum: blue, autism, adhd, down, dyslexia, epilepsy, colorblind, calm, contrast | Default blue. See `src/lib/theme.ts` |
 | show_buddy | boolean | Show the Buddy on the tab bar. Default true |
+| onboarded | boolean | Finished Welcome (name, Buddy) after the first sign-in. Default false |
 
 ## Routine
 | Field | Type | Notes |
@@ -50,6 +51,7 @@ const routines = docs.map((d) => toRecord<Routine>(d));
 | active | boolean | |
 | tone | enum: teal, sea, orange, gold | Color on screen (blue, green, orange, yellow). Default teal |
 | remind | boolean | Show check-ins for this routine. Default true |
+| added_by | id \| null | A guardian who added this routine for the user. Null if the user did |
 
 ## Step
 | Field | Type | Notes |
@@ -86,6 +88,7 @@ const routines = docs.map((d) => toRecord<Routine>(d));
 | method | enum: sms, email, telegram | |
 | contact | string | |
 | relation | string | Who they are, like "Your brother". Shown under their name |
+| added_by | id \| null | A guardian who added this contact for the user. Null if the user did |
 | can_see_routines | boolean | Default false |
 | can_get_lost_alerts | boolean | Default false |
 | can_get_stuck_alerts | boolean | Default false |
@@ -137,3 +140,45 @@ Token balance = sum of the user's TokenTransactions. Only server code writes Tok
 ## Independence score
 
 Calculated, not stored: share of steps in the last 7 days marked done without `used_help`. When it stays above 80% for a week, suggest lowering `support_level`.
+
+## GuardianLink
+
+A guardian (parent, aide, job coach) linked to a user. Two separate accounts; one link. Made only by a setup code. Either side can remove it.
+
+| Field | Type | Notes |
+| --- | --- | --- |
+| user_id | id | The person using Bridge |
+| guardian_id | id | Their guardian's account. Unique with user_id |
+| can_see_routines | boolean | Default false. Only the user can change sharing |
+| can_get_lost_alerts | boolean | Default false |
+| can_get_stuck_alerts | boolean | Default false |
+| user_can_edit_routines | boolean | Default true. Only the guardian changes it. Off: the user can do routines but not make, change or delete them |
+| user_can_edit_contacts | boolean | Default true. Only the guardian changes it. Off: the user can't add, change or delete trusted contacts, but still chooses what each can see |
+| created_at | date | |
+
+## SetupCode
+
+A one-time code that links a user and a guardian. Either side makes one; the other side enters it. Six characters with no look-alikes (no 0, O, 1, I, L). Works once, for 24 hours; MongoDB deletes it a day after that. Making a new code cancels that person's unused one.
+
+| Field | Type | Notes |
+| --- | --- | --- |
+| code | string | Unique, like "K7P2QX" |
+| from_role | "user" \| "guardian" | Who made it. Only the other side can enter it |
+| created_by | id | |
+| name | string \| null | A guardian setting Bridge up for someone types their name; Welcome fills it in |
+| expires_at | date | 24 hours after it's made |
+| used_at | date \| null | Set when it's entered |
+| used_by | id \| null | |
+
+## DailyChallenge
+
+A daily challenge the user finished. One per user, day and challenge (unique index), so each pays once a day. See `docs/rewards.md`.
+
+| Field | Type | Notes |
+| --- | --- | --- |
+| user_id | id | |
+| challenge | "all_routines" \| "scans" \| "new_routine" | |
+| date | "YYYY-MM-DD" | The user's own day |
+| tokens | number | What it paid (also a `challenge` TokenTransaction) |
+| completed_at | date | |
+

@@ -5,6 +5,7 @@ import { Icon } from "@/components/bridge/Icon";
 import { br } from "@/components/bridge/styles";
 import { routineIcon } from "@/features/home/routineIcon";
 import type { RoutineStatus } from "@/features/home/today";
+import { ManagedNote } from "@/features/guardians/components/ManagedNote";
 import { useToday } from "@/features/home/useToday";
 import { formatDays, formatStepCount, formatTime } from "../format";
 
@@ -14,11 +15,15 @@ const BADGE: Record<RoutineStatus, string> = { done: "Done", next: "Next", later
 export function RoutinesScreen() {
   const { today, loading, error } = useToday();
   const routines = today?.routines ?? [];
+  // A guardian can turn off making and changing routines. Doing them is never limited.
+  const rule = today?.edit?.routines;
+  const canEdit = rule?.allowed !== false;
 
   return (
     <div className="flex flex-col gap-4 px-4 pb-[130px] pt-7">
       <div className="flex items-center justify-between">
         <h1 className="m-0 font-display text-[32px] font-bold">Routines</h1>
+        {canEdit && (
         <Link
           href="/routines/new"
           aria-label="Make a new routine"
@@ -27,7 +32,9 @@ export function RoutinesScreen() {
           <Icon name="plus" size={20} strokeWidth={2.6} />
           New
         </Link>
+        )}
       </div>
+      {rule && !canEdit && <ManagedNote area="routines" rule={rule} />}
 
       {loading && <p role="status" className="m-0">Loading your routines…</p>}
       {error && (
@@ -37,7 +44,7 @@ export function RoutinesScreen() {
       )}
       {!loading && !error && routines.length === 0 && (
         <p className="m-0 rounded-[14px] bg-sunken px-4 py-3.5 text-[16px]">
-          You don&apos;t have any routines yet. Tap New to make your first one.
+          {canEdit ? "You don't have any routines yet. Tap New to make your first one." : "You don't have any routines yet."}
         </p>
       )}
 
@@ -63,9 +70,11 @@ export function RoutinesScreen() {
             </Link>
             <div className="flex items-center justify-between gap-2 px-[18px] pb-3 pt-1">
               <span className="text-[16px] text-ink2">{formatDays(r.days)}</span>
-              <Link href={`/routines/${r.id}/edit`} aria-label={`Edit ${r.title}`} className={`${br.link} flex items-center`}>
-                Edit
-              </Link>
+              {canEdit && (
+                <Link href={`/routines/${r.id}/edit`} aria-label={`Edit ${r.title}`} className={`${br.link} flex items-center`}>
+                  Edit
+                </Link>
+              )}
             </div>
           </li>
         ))}

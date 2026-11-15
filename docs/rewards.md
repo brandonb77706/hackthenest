@@ -21,18 +21,38 @@ The users are people with autism, ADHD, and intellectual disabilities, and many 
 | Finish a step | 5 |
 | Finish a whole routine | 20 bonus |
 | Use camera help to handle a letter or bill | 10 |
-| First routine you built yourself | 50 one-time |
+| First routine you ever finish | 50 one-time |
 | Daily streak milestone (3, 7, 14, 30 days) | 25, 50, 100, 200 |
 
 A "streak day" = at least one routine finished that day.
+
+**Once per routine per day.** Each routine pays its step tokens and its bonus once a day, in the user's own time zone. Repeating a routine the same day is allowed (practice is good), but it earns nothing more. A different routine on the same day pays its own tokens, and the same routine pays again the next day. This stops tapping through a short routine over and over to farm tokens. The server decides all of this from saved check-ins; it never trusts the phone to say a routine was finished.
+
+Code: `src/features/rewards/` (`earning.ts` amounts, `stepAwards.ts` the rules above, `service.ts` saves the tokens).
+
+**Streaks.** Finishing the first routine of the day moves the streak (`streak.ts`, `streakService.ts`): one more day after yesterday, a saved freeze covers one missed day, otherwise it starts again at 1. Reaching 3, 7, 14 or 30 days pays the bonus once, and a streak Buddy (Turtle at 7, Bunny at 14) is given when its streak is reached. A broken streak never takes anything away. The step player shows the tokens earned on the results screen; the Done route answers with them.
+
+**Daily challenges.** Three a day, each paying once (`challenges.ts`, `challengeService.ts`), more than a routine:
+
+| Challenge | Done when | Tokens |
+| --- | --- | --- |
+| Finish all of today's routines | Every routine planned today is finished today | 50 |
+| Scan 3 letters or bills | 3 scans today | 40 |
+| Make a new routine | The user makes one today (not a guardian). Hidden when a guardian manages routines | 30 |
+
+The server checks after a routine is finished, a scan, and a new routine. A `DailyChallenge` row per user, day and challenge (unique) makes each pay once, even with taps at the same moment. A scan saves only that it happened (a `camera` HelpRequest with no text), never the photo or its contents. Today shows the challenges with progress.
+
+**Buying.** Shop Buddies are bought on Me (`shop.ts`, `shopService.ts`). One transaction checks the balance, writes the negative `purchase` transaction and the UserAvatar, and puts the Buddy on.
 
 ## Avatars
 
 | Type | How you get it | Examples |
 | --- | --- | --- |
-| Starter | Free at signup, pick 1 of 3 | Fox, robot, cloud |
-| Shop | Buy with tokens, 50 to 300 | Astronaut cat, chef bear, skater owl |
-| Streak exclusive | Reach a streak length, can't be bought | 7 days: bronze star buddy; 14: silver dragon; 30: gold phoenix |
+| Starter | Free at signup, pick 1 of 3 | Fox (the main Buddy), penguin, beaver |
+| Shop | Buy with tokens, 120 to 300 | Frog 120, owl 200, cat 300 |
+| Streak exclusive | Reach a streak length, can't be bought | 7 days: turtle; 14: bunny |
+
+Every Buddy is drawn in `src/components/bridge/BuddyAvatar.tsx` (from the design), so only add a Buddy once it has a drawing.
 
 Generate the whole catalog ahead of time with image generation through the AI layer (prompt in `ai-prompts.md`) so the shop loads instantly. Keep 10 to 15 avatars for the hackathon.
 

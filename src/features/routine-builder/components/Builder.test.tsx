@@ -261,8 +261,8 @@ describe("Builder: when, saving, and ready", () => {
 
     expect(await screen.findByRole("heading", { name: "Take medicine is ready" })).toBeInTheDocument();
     expect(screen.getByText("3 steps · Monday, Tuesday, Wednesday, Thursday, Friday, Saturday at 9:00 PM")).toBeInTheDocument();
+    expect(call(0).url).toMatch(/^\/api\/routines\?tz=/);
     expect(call(0)).toMatchObject({
-      url: "/api/routines",
       method: "POST",
       body: { title: "Take medicine", days: ["mon", "tue", "wed", "thu", "fri", "sat"], start_time: "21:00", tone: "orange", remind: false },
     });
@@ -345,5 +345,35 @@ describe("Builder: editing a saved routine", () => {
     render(<Builder />);
     await user.click(screen.getByRole("button", { name: "Take medicine" }));
     expect(screen.queryByRole("button", { name: "Delete this routine" })).not.toBeInTheDocument();
+  });
+});
+
+describe("Builder: a guardian making a routine for someone", () => {
+  const forPerson = { name: "Jordan", api: "/api/guardian/people/u1/routines", back: "/guardian/u1/routines" };
+
+  it("says who it's for, has no grocery shortcut, saves to the guardian API, and goes back", async () => {
+    fetchMock.mockResolvedValue(saved("r5"));
+    const user = userEvent.setup();
+    render(<Builder forPerson={forPerson} />);
+    expect(screen.getByRole("heading", { name: "Make a routine for Jordan" })).toBeInTheDocument();
+    expect(screen.queryByRole("link", { name: "Grocery shopping" })).not.toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "Close without saving" })).toHaveAttribute("href", "/guardian/u1/routines");
+
+    await user.click(screen.getByRole("button", { name: "Take medicine" }));
+    await user.click(screen.getByRole("button", { name: "Next" }));
+    await user.click(screen.getByRole("button", { name: "Save routine" }));
+    await waitFor(() => expect(push).toHaveBeenCalledWith("/guardian/u1/routines"));
+    expect(call(0)).toMatchObject({ url: "/api/guardian/people/u1/routines", method: "POST" });
+    expect(screen.queryByRole("button", { name: "Start it now" })).not.toBeInTheDocument();
+  });
+
+  it("edits and deletes through the guardian API", async () => {
+    fetchMock.mockResolvedValue(new Response(null, { status: 204 }));
+    const user = userEvent.setup();
+    render(<Builder routineId="r9" initial={draft(["Wake up"])} forPerson={forPerson} />);
+    await user.click(screen.getByRole("button", { name: "Delete this routine" }));
+    await user.click(screen.getByRole("button", { name: "Yes, delete it" }));
+    await waitFor(() => expect(push).toHaveBeenCalledWith("/guardian/u1/routines"));
+    expect(fetchMock.mock.calls[0][0]).toBe("/api/guardian/people/u1/routines/r9");
   });
 });

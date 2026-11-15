@@ -1,6 +1,8 @@
 import { notFound } from "next/navigation";
 import { connection } from "next/server";
 import { Suspense } from "react";
+import { RoutineLocked } from "@/features/guardians/components/RoutineLocked";
+import { getEditRules } from "@/features/guardians/service";
 import { Builder } from "@/features/routine-builder/components/Builder";
 import { getRoutine } from "@/features/routine-builder/service";
 import { getCurrentUserId } from "@/lib/db";
@@ -16,8 +18,10 @@ export default function EditRoutinePage(props: PageProps<"/routines/[id]/edit">)
 async function EditRoutine({ params }: { params: Promise<{ id: string }> }) {
   await connection();
   const { id } = await params;
-  const routine = await getRoutine(await getCurrentUserId(), id);
+  const userId = await getCurrentUserId();
+  const [routine, rules] = await Promise.all([getRoutine(userId, id), getEditRules(userId)]);
   if (!routine) notFound();
+  if (!rules.routines.allowed) return <RoutineLocked rule={rules.routines} />;
 
   const initial = {
     title: routine.title,

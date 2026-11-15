@@ -53,13 +53,15 @@ describe("ScanScreen", () => {
     render(<ScanScreen prepare={prepare} />);
     choose("camera-input");
 
-    expect(await screen.findByRole("heading", { name: "Electric bill from DTE." })).toHaveFocus();
+    const heading = await screen.findByRole("heading", { name: "Electric bill from DTE." });
+    // Focus moves to the heading just after it appears.
+    await waitFor(() => expect(heading).toHaveFocus());
     expect(screen.getByText("Important · due Nov 28")).toBeInTheDocument();
     expect(screen.getByText(/You owe \$84.12/)).toBeInTheDocument();
     expect(screen.getAllByRole("listitem").map((li) => li.textContent)).toEqual(bill.actions);
 
     const [url, init] = fetchMock.mock.calls[0] as [string, RequestInit];
-    expect(url).toBe("/api/scan");
+    expect(url).toMatch(/^\/api\/scan\?tz=/);
     expect(JSON.parse(init.body as string)).toEqual({ image: { data: btoa("small photo"), mime: "image/jpeg" } });
     await waitFor(() => expect(play).toHaveBeenCalledWith(`${bill.what_it_is} ${bill.summary}`));
   });

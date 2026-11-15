@@ -9,6 +9,7 @@ import { useEffect, useRef, useState, useSyncExternalStore } from "react";
 import { BuddyAvatar } from "@/components/bridge/BuddyAvatar";
 import { Dialog } from "@/components/bridge/Dialog";
 import { CoinIcon, Icon } from "@/components/bridge/Icon";
+import { SchemeCard } from "@/components/bridge/SchemeCard";
 import { Switch } from "@/components/bridge/Switch";
 import { br } from "@/components/bridge/styles";
 import {
@@ -21,42 +22,21 @@ import {
 import { COLOR_SCHEMES, type ColorSchemeId } from "@/lib/theme";
 import type { TrustedContact, TrustedContactPermissions } from "@/lib/types";
 import { ContactForm } from "@/features/help/components/ContactForm";
+import { GuardiansSection } from "@/features/guardians/components/GuardiansSection";
+import { ManagedNote } from "@/features/guardians/components/ManagedNote";
+import { SHARING, sharingSummary } from "../sharing";
+import { BadgesCard, RewardsView } from "./Rewards";
+import { SignOutButton } from "@/features/auth/components/SignOutButton";
+export { sharingSummary } from "../sharing";
 import type { MeData } from "../service";
-import { buddyTag, formatTokens, type BuddyChoice } from "../summary";
+import { buddyTag, formatTokens, nextReward as nextRewardFor, type BuddyChoice } from "../summary";
 
 type View =
   | { kind: "home" }
   | { kind: "buddy" }
   | { kind: "schemes" }
+  | { kind: "rewards" }
   | { kind: "contact"; existing?: TrustedContact };
-
-const SHARING: {
-  key: keyof TrustedContactPermissions;
-  label: string;
-  short: string;
-}[] = [
-  {
-    key: "can_get_lost_alerts",
-    label: "My location, only when I tap I'm lost",
-    short: "your location when you're lost",
-  },
-  {
-    key: "can_get_stuck_alerts",
-    label: "If I'm stuck on a step",
-    short: "when you're stuck",
-  },
-  {
-    key: "can_see_routines",
-    label: "When I finish a routine",
-    short: "finished routines",
-  },
-];
-
-/** "Sees: your location when you're lost · when you're stuck", or "Sees nothing". */
-export function sharingSummary(c: TrustedContactPermissions): string {
-  const on = SHARING.filter((s) => c[s.key]).map((s) => s.short);
-  return on.length ? `Sees: ${on.join(" · ")}` : "Sees nothing";
-}
 
 const byName = (a: TrustedContact, b: TrustedContact) =>
   a.name.localeCompare(b.name, undefined, { sensitivity: "base" });
@@ -79,6 +59,9 @@ async function send(
 }
 
 export function MeScreen({ data }: { data: MeData }) {
+  // A guardian can turn off adding and changing contacts. Choosing what each can see stays the user's.
+  const contactRule = data.edit?.contacts;
+  const canEditContacts = contactRule?.allowed !== false;
   const [view, setView] = useState<View>({ kind: "home" });
   /** Whose sharing popup is open */
   const [sharingId, setSharingId] = useState<string | null>(null);
@@ -91,7 +74,35 @@ export function MeScreen({ data }: { data: MeData }) {
   const [showBuddy, setShowBuddy] = useState(data.settings.show_buddy);
   const [error, setError] = useState("");
   const headingRef = useRef<HTMLHeadingElement>(null);
-  const { name, tokens, nextReward } = data.summary;
+  const { name } = data.summary;
+  // Tokens change here when a Buddy is bought, so the next reward is worked out again.
+  const [tokens, setTokens] = useState(data.summary.tokens);
+  const [buying, setBuying] = useState<BuddyChoice | null>(null);
+  const [buyBusy, setBuyBusy] = useState(false);
+  const [bought, setBought] = useState<string | null>(null);
+
+  // Next.js keeps this screen alive when you switch tabs, so new server data
+  // (like tokens from a routine you just finished) arrives as new props while
+  // the state above still holds the old copy. Take the new data when it comes.
+  const [seen, setSeen] = useState(data);
+  if (data !== seen) {
+    setSeen(data);
+    setTokens(data.summary.tokens);
+    setBuddies(data.buddies);
+    setBuddyName(data.summary.buddyName);
+    setContacts(data.contacts);
+    setScheme(data.settings.color_scheme);
+    setShowBuddy(data.settings.show_buddy);
+    setBought(null);
+  }
+  const nextReward =
+    tokens === data.summary.tokens
+      ? data.summary.nextReward
+      : nextRewardFor(
+          tokens,
+          buddies.filter((b) => b.unlock_type === "shop"),
+          buddies.filter((b) => b.owned).map((b) => b.id),
+        );
   const device = useSyncExternalStore(
     subscribeSettings,
     getSettings,
@@ -118,7 +129,41 @@ export function MeScreen({ data }: { data: MeData }) {
     setView(next);
   }
 
+  /** Shop Buddies not owned yet can be bought with tokens. */
+  const forSale = (b: BuddyChoice) => !b.owned && b.unlock_type === "shop" && (b.price ?? 0) > 0;
+
+  async function buy(b: BuddyChoice) {
+    setBuyBusy(true);
+    setError("");
+    try {
+      const res = await fetch("/api/me/buddy/buy", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ avatar_id: b.id }),
+      });
+      const body = (await res.json().catch(() => ({}))) as { buddy_name?: string; tokens?: number; error?: string };
+      if (!res.ok) throw new Error(body.error || "Couldn't buy it. Try again.");
+      setBuddies((list) =>
+        list.map((x) => ({ ...x, equipped: x.id === b.id, owned: x.owned || x.id === b.id, can_choose: x.can_choose || x.id === b.id })),
+      );
+      setBuddyName(b.name);
+      setTokens(typeof body.tokens === "number" ? body.tokens : tokens - (b.price ?? 0));
+      updateSettings({ buddyName: b.name });
+      setBought(b.name);
+      setBuying(null);
+    } catch (err) {
+      setError(err instanceof Error && err.message !== "Failed to fetch" ? err.message : "Couldn't buy it. Check your internet.");
+    } finally {
+      setBuyBusy(false);
+    }
+  }
+
   async function choose(b: BuddyChoice) {
+    if (forSale(b)) {
+      setError("");
+      setBuying(b);
+      return;
+    }
     if (!b.can_choose || b.equipped) return;
     const before = buddies;
     setBuddies(
@@ -267,16 +312,29 @@ export function MeScreen({ data }: { data: MeData }) {
             tabIndex={-1}
             className="m-0 font-display text-[28px] font-bold"
           >
-            {view.kind === "buddy" ? "Choose your Buddy" : "Color scheme"}
+            {view.kind === "buddy" ? "Choose your Buddy" : view.kind === "rewards" ? "Badges and rewards" : "Color scheme"}
           </h1>
         </div>
         {errorLine}
+
+        {view.kind === "rewards" && <RewardsView tokens={tokens} nextReward={nextReward} badges={data.badges ?? []} streak={data.streak} />}
 
         {view.kind === "buddy" && (
           <>
             <p className="m-0 -mt-1 text-ink2">
               Your Buddy holds the tab bar and gives tips when you tap it.
             </p>
+            <div className="flex items-center gap-2.5 rounded-2xl bg-primary-soft px-4 py-3">
+              <CoinIcon size={28} />
+              <span className="text-[17px]">
+                <strong>You have {formatTokens(tokens)}.</strong> Tap a Buddy with a price to buy it.
+              </span>
+            </div>
+            {bought && (
+              <p role="status" className="m-0 rounded-2xl bg-go-soft px-4 py-3 text-[17px] font-bold">
+                You got {bought}! {bought} is your Buddy now.
+              </p>
+            )}
             <div className="grid grid-cols-2 gap-3">
               {buddies.map((b) => {
                 const locked = !b.can_choose;
@@ -286,8 +344,11 @@ export function MeScreen({ data }: { data: MeData }) {
                     type="button"
                     onClick={() => choose(b)}
                     aria-pressed={b.equipped}
-                    aria-disabled={locked}
-                    aria-label={`${b.name}, ${b.equipped ? "your Buddy" : locked ? `locked, ${buddyTag(b)}` : "tap to choose"}`}
+                    aria-disabled={locked && !forSale(b)}
+                    aria-haspopup={forSale(b) ? "dialog" : undefined}
+                    aria-label={`${b.name}, ${
+                      b.equipped ? "your Buddy" : forSale(b) ? `${buddyTag(b)}, tap to buy` : locked ? `locked, ${buddyTag(b)}` : "tap to choose"
+                    }`}
                     className={`br-press flex flex-col items-center gap-1.5 rounded-[22px] border-[3px] px-2.5 pb-3.5 pt-4 text-ink ${
                       b.equipped
                         ? "border-switch-on bg-primary-soft shadow-[0_4px_0_var(--br-switch-on)]"
@@ -332,6 +393,49 @@ export function MeScreen({ data }: { data: MeData }) {
                 );
               })}
             </div>
+            {buying && (
+              <Dialog
+                title={tokens >= (buying.price ?? 0) ? `Buy ${buying.name}?` : `${buying.name} costs ${formatTokens(buying.price ?? 0)}`}
+                onClose={() => setBuying(null)}
+              >
+                <div className="flex items-center gap-3.5">
+                  <span className="flex size-[88px] shrink-0 items-end justify-center overflow-hidden rounded-full bg-primary-soft">
+                    <BuddyAvatar name={buying.name} size={82} />
+                  </span>
+                  {tokens >= (buying.price ?? 0) ? (
+                    <p className="m-0 text-[17px]">
+                      It costs {formatTokens(buying.price ?? 0)}. You&apos;ll have {formatTokens(tokens - (buying.price ?? 0))} left, and{" "}
+                      {buying.name} becomes your Buddy.
+                    </p>
+                  ) : (
+                    <p className="m-0 text-[17px]">
+                      You have {formatTokens(tokens)}. You need {formatTokens((buying.price ?? 0) - tokens)} more. Finish routines to earn
+                      them.
+                    </p>
+                  )}
+                </div>
+                {errorLine}
+                {tokens >= (buying.price ?? 0) ? (
+                  <>
+                    <button
+                      type="button"
+                      onClick={() => buy(buying)}
+                      disabled={buyBusy}
+                      className={`${br.cta} min-h-[58px] rounded-2xl text-[20px]`}
+                    >
+                      {buyBusy ? "Buying…" : `Buy for ${formatTokens(buying.price ?? 0)}`}
+                    </button>
+                    <button type="button" onClick={() => setBuying(null)} className={`${br.ghost} min-h-[54px] rounded-2xl text-[17px]`}>
+                      Not now
+                    </button>
+                  </>
+                ) : (
+                  <button type="button" onClick={() => setBuying(null)} className={`${br.cta} min-h-[58px] rounded-2xl text-[20px]`}>
+                    OK
+                  </button>
+                )}
+              </Dialog>
+            )}
           </>
         )}
 
@@ -346,63 +450,9 @@ export function MeScreen({ data }: { data: MeData }) {
               aria-label="Color scheme"
               className="flex flex-col gap-3.5"
             >
-              {COLOR_SCHEMES.map((s) => {
-                const on = s.id === scheme;
-                return (
-                  <button
-                    key={s.id}
-                    type="button"
-                    role="radio"
-                    aria-checked={on}
-                    onClick={() => pickScheme(s.id)}
-                    className={`br-press flex flex-col overflow-hidden rounded-[20px] p-0 text-left ${on ? "border-[3px] border-switch-on" : "border-2 border-line"}`}
-                    style={{
-                      background: s.preview.canvas,
-                      color: s.preview.ink,
-                    }}
-                  >
-                    <span
-                      className="box-border flex w-full items-center justify-between gap-2.5 px-4 py-3.5"
-                      style={{
-                        background: s.preview.hero,
-                        color: s.preview.heroInk,
-                      }}
-                    >
-                      <strong className="font-display text-[19px] font-bold leading-tight">
-                        {s.name}
-                      </strong>
-                      <span
-                        aria-hidden="true"
-                        className="flex shrink-0 gap-[5px]"
-                      >
-                        {s.swatches.map((c) => (
-                          <span
-                            key={c}
-                            className="size-[22px] rounded-full border-2 border-white/85 shadow-[0_0_0_1px_rgba(0,0,0,0.18)]"
-                            style={{ background: c }}
-                          />
-                        ))}
-                      </span>
-                    </span>
-                    <span className="flex flex-col gap-1 px-4 pb-3.5 pt-3">
-                      <span className="text-[15px] font-bold">
-                        For: {s.who}
-                      </span>
-                      <span
-                        className="text-[15px] leading-[1.35]"
-                        style={{ color: s.preview.ink2 }}
-                      >
-                        {s.description}
-                      </span>
-                      {on && (
-                        <span className="mt-1 self-start rounded-full bg-switch-on px-2.5 py-0.5 text-[15px] font-bold text-knob">
-                          In use
-                        </span>
-                      )}
-                    </span>
-                  </button>
-                );
-              })}
+              {COLOR_SCHEMES.map((s) => (
+                <SchemeCard key={s.id} scheme={s} selected={s.id === scheme} onPick={pickScheme} />
+              ))}
             </div>
           </>
         )}
@@ -442,42 +492,7 @@ export function MeScreen({ data }: { data: MeData }) {
       </div>
       {errorLine}
 
-      <h2 className="m-0 mt-2.5 font-display text-[22px] font-bold">Rewards</h2>
-      <div className="flex items-center gap-3.5 rounded-[22px] bg-primary-soft p-[18px]">
-        <CoinIcon size={54} />
-        <div className="flex min-w-0 grow flex-col gap-0.5">
-          <span className="font-display text-[30px] font-bold leading-none">
-            {formatTokens(tokens)}
-          </span>
-          <span className="text-[15px] text-ink2">
-            You earn tokens when you finish steps and routines.
-          </span>
-        </div>
-      </div>
-      {nextReward && (
-        <div className={`${br.card} flex flex-col gap-2 rounded-[20px] p-4`}>
-          <span
-            id="next-reward-label"
-            className="font-display text-[18px] font-semibold"
-          >
-            {nextReward.label}
-          </span>
-          <div
-            role="progressbar"
-            aria-labelledby="next-reward-label"
-            aria-valuemin={0}
-            aria-valuemax={100}
-            aria-valuenow={nextReward.percent}
-            className="h-3 overflow-hidden rounded-full bg-sunken"
-          >
-            <div
-              className="h-full rounded-full bg-switch-on"
-              style={{ width: `${nextReward.percent}%` }}
-            />
-          </div>
-          <span className="text-[15px] text-ink2">{nextReward.detail}</span>
-        </div>
-      )}
+      <BadgesCard badges={data.badges ?? []} nextReward={nextReward} onOpen={() => go({ kind: "rewards" })} />
 
       <h2 className="m-0 mt-2.5 font-display text-[22px] font-bold">
         Trusted contacts
@@ -533,13 +548,17 @@ export function MeScreen({ data }: { data: MeData }) {
           ))}
         </ul>
       )}
-      <button
-        type="button"
-        onClick={() => go({ kind: "contact" })}
-        className={`${br.ghost} min-h-[54px] rounded-2xl text-[17px]`}
-      >
-        + Add a trusted contact
-      </button>
+      {canEditContacts ? (
+        <button
+          type="button"
+          onClick={() => go({ kind: "contact" })}
+          className={`${br.ghost} min-h-[54px] rounded-2xl text-[17px]`}
+        >
+          + Add a trusted contact
+        </button>
+      ) : (
+        contactRule && <ManagedNote area="contacts" rule={contactRule} />
+      )}
 
       {sharingFor && (
         <Dialog
@@ -564,13 +583,15 @@ export function MeScreen({ data }: { data: MeData }) {
             ))}
           </div>
           {errorLine}
-          <button
-            type="button"
-            onClick={() => go({ kind: "contact", existing: sharingFor })}
-            className={`${br.ghost} min-h-[54px] rounded-2xl text-[17px]`}
-          >
-            Change name or number
-          </button>
+          {canEditContacts && (
+            <button
+              type="button"
+              onClick={() => go({ kind: "contact", existing: sharingFor })}
+              className={`${br.ghost} min-h-[54px] rounded-2xl text-[17px]`}
+            >
+              Change name or number
+            </button>
+          )}
           <button
             type="button"
             onClick={() => setSharingId(null)}
@@ -580,6 +601,8 @@ export function MeScreen({ data }: { data: MeData }) {
           </button>
         </Dialog>
       )}
+
+      <GuardiansSection />
 
       <h2 className="m-0 mt-2.5 font-display text-[22px] font-bold">
         Color scheme
@@ -648,6 +671,10 @@ export function MeScreen({ data }: { data: MeData }) {
             <span className="text-[15px] text-ink2">{r.sub}</span>
           </Switch>
         ))}
+      </div>
+
+      <div className="mt-4">
+        <SignOutButton />
       </div>
     </div>
   );

@@ -19,9 +19,10 @@ export async function listContacts(userId: ID): Promise<TrustedContact[]> {
   return docs.map((d) => toRecord<TrustedContact>(d));
 }
 
-export async function createContact(userId: ID, input: ContactInput): Promise<TrustedContact> {
+/** addedBy is set when a guardian adds the contact for the user. */
+export async function createContact(userId: ID, input: ContactInput, addedBy: ID | null = null): Promise<TrustedContact> {
   await connectDB();
-  const doc = await TrustedContactModel.create({ user_id: userId, ...input });
+  const doc = await TrustedContactModel.create({ user_id: userId, ...input, added_by: addedBy });
   return toRecord<TrustedContact>(doc);
 }
 

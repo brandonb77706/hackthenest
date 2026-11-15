@@ -1,5 +1,6 @@
 "use client";
 
+import { ChallengesCard } from "@/features/rewards/components/ChallengesCard";
 import Link from "next/link";
 import { CoinIcon, FlameIcon, Icon } from "@/components/bridge/Icon";
 import { NotificationBell } from "@/features/notifications/components/NotificationBell";
@@ -16,6 +17,8 @@ const chip =
 /** The Today tab: greeting, progress, and today's routines as a path. */
 export function TodayScreen() {
   const { today, loading, error, hour } = useToday();
+  // A guardian can turn off making routines. Doing them is never limited.
+  const canMakeRoutines = today?.edit?.routines.allowed !== false;
   const todays = today?.routines.filter((r) => r.status !== "not_today") ?? [];
   const doneCount = todays.filter((r) => r.status === "done").length;
   const hello = hour === null ? "Hello" : greeting(hour);
@@ -80,17 +83,21 @@ export function TodayScreen() {
           )}
         {!loading && !error && todays.length === 0 && (
           <p className="m-0 w-full rounded-2xl bg-sunken px-5 py-4 text-center">
-            Nothing is planned for today. Make a routine to get started.
+            {canMakeRoutines ? "Nothing is planned for today. Make a routine to get started." : "Nothing is planned for today."}
           </p>
         )}
 
-        <Link
-          href="/routines/new"
-          className={`${br.ghost} flex min-h-14 w-full items-center justify-center gap-2 rounded-2xl text-[18px] no-underline`}
-        >
-          <Icon name="plus" size={22} strokeWidth={2.6} />
-          Make a new routine
-        </Link>
+        {today?.challenges && <ChallengesCard challenges={today.challenges} />}
+
+        {canMakeRoutines && (
+          <Link
+            href="/routines/new"
+            className={`${br.ghost} flex min-h-14 w-full items-center justify-center gap-2 rounded-2xl text-[18px] no-underline`}
+          >
+            <Icon name="plus" size={22} strokeWidth={2.6} />
+            Make a new routine
+          </Link>
+        )}
       </div>
     </div>
   );

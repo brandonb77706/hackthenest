@@ -27,11 +27,17 @@ const routine = {
 };
 
 let fetchMock: ReturnType<typeof vi.fn>;
-let doneStatus = 204;
+let doneStatus = 200;
+/** What each Done tap earns, in order (the server decides this) */
+let doneReplies: object[] = [];
 beforeEach(() => {
-  doneStatus = 204;
+  doneStatus = 200;
+  doneReplies = [];
   fetchMock = vi.fn(async (url: string, init?: RequestInit) => {
-    if (init?.method === "POST") return new Response(null, { status: doneStatus });
+    if (init?.method === "POST") {
+      const reply = doneReplies.shift() ?? { earned: 0, awards: [], finished_routine: false, streak: null, unlocked: [] };
+      return doneStatus === 200 ? new Response(JSON.stringify(reply), { status: 200 }) : new Response(null, { status: doneStatus });
+    }
     if (url === "/api/routines/r1") return new Response(JSON.stringify({ routine }), { status: 200 });
     return new Response("{}", { status: 404 });
   });
@@ -45,7 +51,7 @@ afterEach(() => {
 const posts = () =>
   fetchMock.mock.calls
     .filter(([, init]) => (init as RequestInit | undefined)?.method === "POST")
-    .map(([url, init]) => ({ url, body: JSON.parse((init as RequestInit).body as string) }));
+    .map(([url, init]) => ({ url: String(url).split("?")[0], body: JSON.parse((init as RequestInit).body as string) }));
 
 describe("StepPlayer", () => {
   it("shows one step at a time and reads it out loud", async () => {
@@ -139,5 +145,57 @@ describe("StepPlayer", () => {
     render(<StepPlayer routineId="r1" />);
     await screen.findByRole("heading", { name: "Take your morning pill" });
     expect(screen.getByRole("link", { name: "Leave routine" })).toHaveAttribute("href", "/");
+  });
+
+  it("sends the time zone, so once a day means the person's day", async () => {
+    const user = userEvent.setup();
+    render(<StepPlayer routineId="r1" />);
+    await screen.findByRole("heading", { name: "Take your morning pill" });
+    await user.click(screen.getByRole("button", { name: "Done" }));
+    await screen.findByRole("heading", { name: "Brush your teeth" });
+    const url = String(fetchMock.mock.calls.find(([, init]) => (init as RequestInit | undefined)?.method === "POST")![0]);
+    expect(url).toMatch(/\/done\?tz=.+/);
+  });
+
+  it("shows and says the tokens earned, the streak, and an unlocked Buddy", async () => {
+    doneReplies = [
+      { earned: 5, awards: [{ amount: 5, reason: "step" }], finished_routine: false, streak: null, unlocked: [] },
+      { earned: 5, awards: [{ amount: 5, reason: "step" }], finished_routine: false, streak: null, unlocked: [] },
+      {
+        earned: 75,
+        awards: [
+          { amount: 5, reason: "step" },
+          { amount: 20, reason: "routine" },
+          { amount: 50, reason: "streak" },
+        ],
+        finished_routine: true,
+        streak: 7,
+        unlocked: ["Turtle"],
+        challenges: [{ id: "all_routines", title: "Finish all of today's routines", tokens: 50, done: true, progress: "", percent: 100 }],
+      },
+    ];
+    const user = userEvent.setup();
+    render(<StepPlayer routineId="r1" />);
+    for (const step of ["Take your morning pill", "Brush your teeth", "Eat breakfast"]) {
+      await screen.findByRole("heading", { name: step });
+      await user.click(screen.getByRole("button", { name: "Done" }));
+    }
+    expect(await screen.findByRole("heading", { name: "Morning routine done" })).toBeInTheDocument();
+    expect(screen.getByText("+85")).toBeInTheDocument();
+    expect(screen.getByText("7-day streak. Keep it going!")).toBeInTheDocument();
+    expect(screen.getByText("You unlocked Turtle! Pick it on the Me tab.")).toBeInTheDocument();
+    expect(screen.getByText(/Challenge done!/).closest("p")).toHaveTextContent("Finish all of today's routines. +50 tokens");
+    await waitFor(() => expect(play).toHaveBeenCalledWith("Morning routine done. Nice work. You earned 85 tokens."));
+  });
+
+  it("says a repeat earns nothing more, without making it sound bad", async () => {
+    const user = userEvent.setup();
+    render(<StepPlayer routineId="r1" />);
+    for (const step of ["Take your morning pill", "Brush your teeth", "Eat breakfast"]) {
+      await screen.findByRole("heading", { name: step });
+      await user.click(screen.getByRole("button", { name: "Done" }));
+    }
+    expect(await screen.findByText("+0")).toBeInTheDocument();
+    expect(screen.getByText("You already did this one today. Doing it again is great practice.")).toBeInTheDocument();
   });
 });

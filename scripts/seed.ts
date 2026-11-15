@@ -3,15 +3,19 @@
 //
 //   npm run db:seed
 
+import { hashPassword } from "better-auth/crypto";
 import mongoose from "mongoose";
 import {
   AvatarModel,
   CheckInModel,
   connectDB,
+  DailyChallengeModel,
+  GuardianLinkModel,
   DEMO_USER_ID,
   HelpRequestModel,
   ReminderModel,
   RoutineModel,
+  SetupCodeModel,
   SpeakPhraseModel,
   StepModel,
   TokenTransactionModel,
@@ -21,25 +25,27 @@ import {
 } from "@/lib/db";
 import type { Avatar } from "@/lib/types";
 
-// From docs/rewards.md. Images are placeholders until the catalog is generated.
+// From docs/rewards.md. Every Buddy has a drawing in BuddyAvatar (from the design).
 const AVATARS: Omit<Avatar, "id">[] = [
   { name: "Fox", unlock_type: "starter", price: null, streak_required: null, image_url: "/avatars/fox.png" },
-  { name: "Robot", unlock_type: "starter", price: null, streak_required: null, image_url: "/avatars/robot.png" },
-  { name: "Cloud", unlock_type: "starter", price: null, streak_required: null, image_url: "/avatars/cloud.png" },
-  { name: "Astronaut cat", unlock_type: "shop", price: 100, streak_required: null, image_url: "/avatars/astronaut-cat.png" },
-  { name: "Chef bear", unlock_type: "shop", price: 150, streak_required: null, image_url: "/avatars/chef-bear.png" },
-  { name: "Skater owl", unlock_type: "shop", price: 300, streak_required: null, image_url: "/avatars/skater-owl.png" },
-  { name: "Bronze star buddy", unlock_type: "streak", price: null, streak_required: 7, image_url: "/avatars/bronze-star-buddy.png" },
-  { name: "Silver dragon", unlock_type: "streak", price: null, streak_required: 14, image_url: "/avatars/silver-dragon.png" },
-  { name: "Gold phoenix", unlock_type: "streak", price: null, streak_required: 30, image_url: "/avatars/gold-phoenix.png" },
+  { name: "Penguin", unlock_type: "starter", price: null, streak_required: null, image_url: "/avatars/penguin.png" },
+  { name: "Beaver", unlock_type: "starter", price: null, streak_required: null, image_url: "/avatars/beaver.png" },
+  { name: "Frog", unlock_type: "shop", price: 120, streak_required: null, image_url: "/avatars/frog.png" },
+  { name: "Owl", unlock_type: "shop", price: 200, streak_required: null, image_url: "/avatars/owl.png" },
+  { name: "Cat", unlock_type: "shop", price: 300, streak_required: null, image_url: "/avatars/cat.png" },
+  { name: "Turtle", unlock_type: "streak", price: null, streak_required: 7, image_url: "/avatars/turtle.png" },
+  { name: "Bunny", unlock_type: "streak", price: null, streak_required: 14, image_url: "/avatars/bunny.png" },
 ];
 
 const ALL_MODELS = [
   AvatarModel,
   CheckInModel,
+  DailyChallengeModel,
+  GuardianLinkModel,
   HelpRequestModel,
   ReminderModel,
   RoutineModel,
+  SetupCodeModel,
   SpeakPhraseModel,
   StepModel,
   TokenTransactionModel,
@@ -61,6 +67,15 @@ async function main() {
   for (const avatar of AVATARS) {
     await AvatarModel.findOneAndUpdate({ name: avatar.name }, avatar, upsert);
   }
+  // Remove Buddies no longer in the catalog (they had no drawing), and anyone's copy of them.
+  const removed = await AvatarModel.find({ name: { $nin: AVATARS.map((a) => a.name) } });
+  if (removed.length > 0) {
+    const ids = removed.map((a) => a._id);
+    await UserAvatarModel.deleteMany({ avatar_id: { $in: ids } }).setOptions({ allUsers: true });
+    await UserProfileModel.updateMany({ equipped_avatar_id: { $in: ids } }, { $set: { equipped_avatar_id: null } }).setOptions({ allUsers: true });
+    await AvatarModel.deleteMany({ _id: { $in: ids } });
+    console.log(`Removed old Buddies: ${removed.map((a) => a.name).join(", ")}`);
+  }
   console.log(`Avatar catalog: ${AVATARS.length} avatars`);
 
   const fox = await AvatarModel.findOne({ name: "Fox" }).orFail();
@@ -69,10 +84,75 @@ async function main() {
   await UserAvatarModel.findOneAndUpdate({ user_id, avatar_id: fox._id }, { source: "starter" }, upsert);
   await UserProfileModel.findOneAndUpdate(
     { user_id },
-    { $set: { equipped_avatar_id: fox._id }, $setOnInsert: { name: "Jordan" } },
+    { $set: { equipped_avatar_id: fox._id, onboarded: true }, $setOnInsert: { name: "Jordan" } },
     upsert,
   );
   console.log(`Test user ${user_id}: profile ready, Fox equipped`);
+
+  await seedLogins(fox._id);
+}
+
+// Demo logins, stored the way Better Auth stores them (src/lib/auth/server.ts).
+// Jordan's account id is DEMO_USER_ID, so signing in as Jordan shows the sample data.
+// The password is for the demo only. Set DEMO_PASSWORD in .env.local to change it.
+const DEMO_LOGINS = [
+  { id: DEMO_USER_ID, name: "Jordan", email: "jordan@example.com", role: "user" },
+  { id: "64b000000000000000000002", name: "Sam", email: "sam@example.com", role: "guardian" },
+  // Test users for the team. Empty accounts, set up like Jordan so they skip Welcome.
+  { id: "64b000000000000000000003", name: "George", email: "george@example.com", role: "user" },
+  { id: "64b000000000000000000004", name: "Nati", email: "nati@example.com", role: "user" },
+] as const;
+
+async function seedLogins(foxId: mongoose.Types.ObjectId) {
+  const db = mongoose.connection.db;
+  if (!db) throw new Error("Not connected");
+  const password = await hashPassword(process.env.DEMO_PASSWORD || "bridge-demo-2026");
+  const now = new Date();
+
+  for (const login of DEMO_LOGINS) {
+    const _id = new mongoose.Types.ObjectId(login.id);
+    const taken = await db.collection("user").findOne({ email: login.email, _id: { $ne: _id } });
+    if (taken) {
+      console.log(`Skipped ${login.email}: another account already uses that email`);
+      continue;
+    }
+    await db.collection("user").updateOne(
+      { _id },
+      {
+        $set: { email: login.email, role: login.role, emailVerified: true, updatedAt: now },
+        $setOnInsert: { name: login.name, image: null, createdAt: now },
+      },
+      { upsert: true },
+    );
+    await db.collection("account").updateOne(
+      { userId: _id, providerId: "credential" },
+      {
+        $set: { password, updatedAt: now },
+        $setOnInsert: { accountId: login.id, createdAt: now },
+      },
+      { upsert: true },
+    );
+    // Test users start with a name and the Fox, so they go straight to Today.
+    if (login.role === "user" && login.id !== DEMO_USER_ID) {
+      await UserAvatarModel.findOneAndUpdate({ user_id: login.id, avatar_id: foxId }, { source: "starter" }, upsert);
+      await UserProfileModel.findOneAndUpdate(
+        { user_id: login.id },
+        { $set: { onboarded: true }, $setOnInsert: { name: login.name, equipped_avatar_id: foxId } },
+        upsert,
+      );
+    }
+    console.log(`Login ready: ${login.email} (${login.role})`);
+  }
+
+  // Sam is Jordan's guardian in the demo. Jordan chose to share routines with Sam
+  // (real links start with everything off; the user turns sharing on).
+  const [jordan, sam] = DEMO_LOGINS.slice(0, 2).map((l) => new mongoose.Types.ObjectId(l.id));
+  await GuardianLinkModel.updateOne(
+    { user_id: jordan, guardian_id: sam },
+    { $set: { can_see_routines: true }, $setOnInsert: { created_at: now } },
+    { upsert: true },
+  );
+  console.log("Sam is linked to Jordan as their guardian (sees routines)");
 }
 
 main()
