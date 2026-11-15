@@ -5,9 +5,10 @@
 
 import mongoose from "mongoose";
 
-// Next.js reloads modules in dev. Keeping the connection on globalThis stops
-// every reload from opening a new connection to Atlas.
-const cache = globalThis as unknown as { bridgeMongo?: Promise<typeof mongoose> };
+// Turbopack can load separate Mongoose instances for a page and an API route.
+// A promise for one instance cannot connect models registered on another.
+const globalCache = globalThis as unknown as { bridgeMongoConnections?: WeakMap<typeof mongoose, Promise<typeof mongoose>> };
+const connections = globalCache.bridgeMongoConnections ??= new WeakMap();
 
 export function connectDB(): Promise<typeof mongoose> {
   const uri = process.env.MONGODB_URI;
@@ -15,13 +16,15 @@ export function connectDB(): Promise<typeof mongoose> {
     throw new Error("MONGODB_URI is not set. Add your Atlas connection string to .env.local (see .env.example).");
   }
 
-  cache.bridgeMongo ??= mongoose
-    .connect(uri, { dbName: process.env.MONGODB_DB || "bridge" })
-    .catch((error: unknown) => {
-      // Let the next call try again instead of keeping a failed connection.
-      cache.bridgeMongo = undefined;
-      throw error;
-    });
-
-  return cache.bridgeMongo;
+  if (mongoose.connection.readyState === 1) return Promise.resolve(mongoose);
+  const existing = connections.get(mongoose);
+  if (existing && mongoose.connection.readyState !== 0) return existing;
+  const pending = mongoose.connect(uri, { dbName: process.env.MONGODB_DB || "bridge" });
+  connections.set(mongoose, pending);
+  // Keep only in-flight promises, so a later disconnect can reconnect.
+  void pending.then(
+    () => { if (connections.get(mongoose) === pending) connections.delete(mongoose); },
+    () => { if (connections.get(mongoose) === pending) connections.delete(mongoose); },
+  );
+  return pending;
 }
