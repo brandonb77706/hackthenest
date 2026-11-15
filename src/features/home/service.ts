@@ -2,6 +2,7 @@
 
 import mongoose, { isValidObjectId } from "mongoose";
 import {
+  AvatarModel,
   CheckInModel,
   connectDB,
   RoutineModel,
@@ -10,8 +11,9 @@ import {
   TokenTransactionModel,
   UserProfileModel,
 } from "@/lib/db";
+import { settingsOf, type MeSettings } from "@/features/me/service";
 import { localNow } from "@/lib/time";
-import type { CheckIn, ID, Routine, Step } from "@/lib/types";
+import type { Avatar, CheckIn, ID, Routine, Step, UserProfile } from "@/lib/types";
 import { summarizeDay, type TodayRoutine } from "./today";
 
 export interface TodayResponse {
@@ -19,12 +21,14 @@ export interface TodayResponse {
   streak: number;
   tokens: number;
   routines: TodayRoutine[];
+  /** Color scheme and Buddy, so this device can catch up with the profile */
+  settings: MeSettings;
 }
 
 export async function getToday(userId: ID, timeZone: string, at = new Date()): Promise<TodayResponse> {
   await connectDB();
   const [profile, tokenSum, routineDocs, stepDocs, recent] = await Promise.all([
-    UserProfileModel.findOne({ user_id: userId }, { name: 1, current_streak: 1 }),
+    UserProfileModel.findOne({ user_id: userId }),
     TokenTransactionModel.aggregate<{ total: number }>([
       { $match: { user_id: new mongoose.Types.ObjectId(userId) } },
       { $group: { _id: null, total: { $sum: "$amount" } } },
@@ -48,9 +52,13 @@ export async function getToday(userId: ID, timeZone: string, at = new Date()): P
       .map((c) => c.step_id),
   );
 
+  const profileRecord = profile ? toRecord<UserProfile>(profile) : null;
+  const buddyDoc = profileRecord?.equipped_avatar_id ? await AvatarModel.findById(profileRecord.equipped_avatar_id) : null;
+
   return {
     name: profile?.name ?? "",
     streak: profile?.current_streak ?? 0,
+    settings: settingsOf(profileRecord, buddyDoc ? toRecord<Avatar>(buddyDoc).name : null),
     tokens: tokenSum[0]?.total ?? 0,
     routines: summarizeDay({
       routines: routineDocs.map((doc) => {

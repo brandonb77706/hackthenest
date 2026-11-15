@@ -37,6 +37,8 @@ const routines = docs.map((d) => toRecord<Routine>(d));
 | streak_freezes | number | 0 to 2, default 0 |
 | last_streak_date | string "YYYY-MM-DD" | The user's local day, so time zones don't break streaks |
 | equipped_avatar_id | reference | Avatar shown as the guide |
+| color_scheme | enum: blue, autism, adhd, down, dyslexia, epilepsy, colorblind, calm, contrast | Default blue. See `src/lib/theme.ts` |
+| show_buddy | boolean | Show the Buddy on the tab bar. Default true |
 
 ## Routine
 | Field | Type | Notes |

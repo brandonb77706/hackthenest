@@ -254,7 +254,7 @@ export function ContactForm({ existing, onSaved, onDeleted, onCancel }: Props) {
               type="button"
               disabled={busy}
               onClick={remove}
-              className="br-press h-14 rounded-2xl border-0 bg-danger font-display text-[19px] font-bold text-white shadow-[0_5px_0_var(--br-danger-edge)]"
+              className="br-press h-14 rounded-2xl border-0 bg-danger font-display text-[19px] font-bold text-on-danger shadow-[0_5px_0_var(--br-danger-edge)]"
             >
               Yes, remove them
             </button>

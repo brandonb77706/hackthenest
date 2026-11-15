@@ -24,7 +24,7 @@ export function Switch({ checked, onChange, children, className = "" }: Props) {
         aria-hidden="true"
         className={`box-border flex h-8 w-14 shrink-0 items-center rounded-full p-[3px] ${checked ? "justify-end bg-switch-on" : "justify-start bg-line"}`}
       >
-        <span className="size-[26px] rounded-full bg-white" />
+        <span className="size-[26px] rounded-full bg-knob" />
       </span>
     </button>
   );

@@ -1,58 +1,7 @@
 @import "tailwindcss";
 
-/*
- * Bridge design tokens, from the "Bridge Mockups" design (baby blue scheme).
- * Other color schemes (calm, high contrast, ...) can be added later by
- * redefining these variables under a [data-theme="..."] selector.
- */
-:root {
-  --br-canvas: #f7fbfe;
-  --br-surface: #ffffff;
-  --br-sunken: #eef5fa;
-  --br-line: #d6e6f0;
-  --br-ink: #0f3550;
-  --br-ink2: #4a6478;
-
-  --br-go: #5fcca8;
-  --br-go-edge: #2f9878;
-  --br-go-soft: #ddf6ee;
-
-  --br-cta: #8ed1f2;
-  --br-cta-edge: #4fa8d6;
-  --br-cta-ink: #0f3550;
-
-  --br-danger: #d64545;
-  --br-danger-edge: #a83232;
-  --br-danger-soft: #fde7e7;
-  --br-danger-text: #b03030;
-
-  --br-hero: #8ed1f2;
-  --br-hero-edge: #4fa8d6;
-  --br-hero-ink: #0f3550;
-  --br-seg-empty: rgba(15, 53, 80, 0.16);
-
-  --br-primary-text: #1d6e99;
-  --br-primary-soft: #e3f4fc;
-  --br-switch-on: #1d6e99;
-
-  --br-flame: #f28a4b;
-  --br-coin: #ffd866;
-  --br-coin-edge: #b8860b;
-
-  /* Routine colors: fill, edge, text on fill, soft background */
-  --br-teal: #8ed1f2;
-  --br-teal-edge: #4fa8d6;
-  --br-teal-soft: #e3f4fc;
-  --br-sea: #5fcca8;
-  --br-sea-edge: #2f9878;
-  --br-sea-soft: #ddf6ee;
-  --br-orange: #ffb48a;
-  --br-orange-edge: #e07f4f;
-  --br-orange-soft: #ffede2;
-  --br-gold: #ffd866;
-  --br-gold-edge: #d9a92e;
-  --br-gold-soft: #fff6d6;
-}
+/* The color schemes (baby blue by default) set the --br-* colors. */
+@import "./themes.css";
 
 @theme inline {
   --font-sans: var(--font-atkinson), system-ui, -apple-system, sans-serif;
@@ -74,6 +23,14 @@
   --color-danger-edge: var(--br-danger-edge);
   --color-danger-soft: var(--br-danger-soft);
   --color-danger-text: var(--br-danger-text);
+  --color-on-danger: var(--br-on-danger);
+  --color-on-go: var(--br-on-go);
+  --color-chip: var(--br-chip);
+  --color-chip-ink: var(--br-chip-ink);
+  --color-start: var(--br-start);
+  --color-start-ink: var(--br-start-ink);
+  --color-knob: var(--br-knob);
+  --color-tab-border: var(--br-tab-border);
   --color-hero: var(--br-hero);
   --color-hero-edge: var(--br-hero-edge);
   --color-hero-ink: var(--br-hero-ink);
@@ -84,13 +41,14 @@
   --color-tone: var(--t-bg);
   --color-tone-edge: var(--t-edge);
   --color-tone-soft: var(--t-soft);
+  --color-tone-ink: var(--t-on);
 }
 
 /* Put one of these on an element to color it (and its children) as a routine. */
-.tone-teal { --t-bg: var(--br-teal); --t-edge: var(--br-teal-edge); --t-soft: var(--br-teal-soft); }
-.tone-sea { --t-bg: var(--br-sea); --t-edge: var(--br-sea-edge); --t-soft: var(--br-sea-soft); }
-.tone-orange { --t-bg: var(--br-orange); --t-edge: var(--br-orange-edge); --t-soft: var(--br-orange-soft); }
-.tone-gold { --t-bg: var(--br-gold); --t-edge: var(--br-gold-edge); --t-soft: var(--br-gold-soft); }
+.tone-teal { --t-bg: var(--br-teal); --t-edge: var(--br-teal-edge); --t-soft: var(--br-teal-soft); --t-on: var(--br-teal-on); }
+.tone-sea { --t-bg: var(--br-sea); --t-edge: var(--br-sea-edge); --t-soft: var(--br-sea-soft); --t-on: var(--br-sea-on); }
+.tone-orange { --t-bg: var(--br-orange); --t-edge: var(--br-orange-edge); --t-soft: var(--br-orange-soft); --t-on: var(--br-orange-on); }
+.tone-gold { --t-bg: var(--br-gold); --t-edge: var(--br-gold-edge); --t-soft: var(--br-gold-soft); --t-on: var(--br-gold-on); }
 
 body {
   background: var(--br-canvas);
@@ -127,6 +85,15 @@ body {
   transform-origin: 50% 100%;
 }
 
+/* The reminder banner drops in from the top. */
+@keyframes br-drop {
+  from { transform: translate(-50%, -120%); }
+  to { transform: translate(-50%, 0); }
+}
+.br-toast {
+  animation: br-drop 0.35s ease-out;
+}
+
 @keyframes br-ringpulse {
   0% { transform: scale(0.85); opacity: 0.9; }
   100% { transform: scale(1.25); opacity: 0; }
@@ -137,6 +104,7 @@ body {
 
 @media (prefers-reduced-motion: reduce) {
   .br-hold { animation: none; }
+  .br-toast { animation: none; }
   .br-ring { animation: none; opacity: 0.6; }
   .br-press { transition: none; }
 }

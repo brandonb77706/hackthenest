@@ -18,7 +18,7 @@ beforeEach(() => vi.clearAllMocks());
 
 describe("GET /api/today", () => {
   it("uses the user's time zone and isn't cached", async () => {
-    s.getToday.mockResolvedValue({ name: "Jordan", streak: 4, tokens: 0, routines: [] });
+    s.getToday.mockResolvedValue({ name: "Jordan", streak: 4, tokens: 0, routines: [], settings: { color_scheme: "blue", show_buddy: true, buddy_name: "Fox" } });
     const res = await GET(new Request("http://test/api/today?tz=America%2FChicago"));
     expect(await res.json()).toMatchObject({ name: "Jordan", streak: 4 });
     expect(s.getToday).toHaveBeenCalledWith("user-1", "America/Chicago");
@@ -26,7 +26,7 @@ describe("GET /api/today", () => {
   });
 
   it("falls back to UTC without a time zone", async () => {
-    s.getToday.mockResolvedValue({ name: "", streak: 0, tokens: 0, routines: [] });
+    s.getToday.mockResolvedValue({ name: "", streak: 0, tokens: 0, routines: [], settings: { color_scheme: "blue", show_buddy: true, buddy_name: "Fox" } });
     await GET(new Request("http://test/api/today"));
     expect(s.getToday).toHaveBeenCalledWith("user-1", "UTC");
   });

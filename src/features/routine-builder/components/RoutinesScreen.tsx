@@ -48,7 +48,7 @@ export function RoutinesScreen() {
             className={`tone-${r.tone} overflow-hidden rounded-[20px] border-2 border-tone-edge bg-surface text-ink shadow-[0_5px_0_var(--t-edge)]`}
           >
             <Link href={`/play/${r.id}`} aria-label={`Start ${r.title}`} className="br-press block text-ink no-underline">
-              <span className="box-border flex w-full items-center gap-3.5 bg-tone p-[18px]">
+              <span className="box-border flex w-full items-center gap-3.5 bg-tone p-[18px] text-tone-ink">
                 <Icon name={routineIcon(r.start_time)} size={34} />
                 <span className="font-display text-[23px] font-bold leading-[1.15]">{r.title}</span>
               </span>

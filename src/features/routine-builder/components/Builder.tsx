@@ -7,7 +7,7 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useReducer, useRef, useState } from "react";
-import { Buddy, BUDDY_NAME } from "@/components/bridge/Buddy";
+import { Buddy, useBuddyName } from "@/components/bridge/Buddy";
 import { Icon, type IconName } from "@/components/bridge/Icon";
 import { Switch } from "@/components/bridge/Switch";
 import { br, iconButton } from "@/components/bridge/styles";
@@ -78,6 +78,7 @@ function firstError(errors: RoutineErrors): string {
 
 export function Builder({ routineId, initial }: Props) {
   const router = useRouter();
+  const buddyName = useBuddyName();
   const editing = Boolean(routineId);
   const [stage, setStage] = useState<Stage>(editing ? "review" : "pick");
   const [state, dispatch] = useReducer(editorReducer, initial ?? startingRoutine(BLANK_TEMPLATE_ID)!, toEditorState);
@@ -298,7 +299,7 @@ export function Builder({ routineId, initial }: Props) {
               >
                 <span
                   aria-hidden="true"
-                  className={`tone-${w.tone} flex size-[58px] shrink-0 items-center justify-center rounded-2xl bg-tone text-ink shadow-[0_4px_0_var(--t-edge)]`}
+                  className={`tone-${w.tone} flex size-[58px] shrink-0 items-center justify-center rounded-2xl bg-tone text-tone-ink shadow-[0_4px_0_var(--t-edge)]`}
                 >
                   <Icon name={w.icon} size={30} strokeWidth={2.2} />
                 </span>
@@ -344,7 +345,7 @@ export function Builder({ routineId, initial }: Props) {
                   aria-pressed={speech.listening}
                   className={`br-press relative flex size-[132px] items-center justify-center rounded-full border-0 p-0 ${
                     speech.listening
-                      ? "bg-danger text-white shadow-[0_7px_0_var(--br-danger-edge)]"
+                      ? "bg-danger text-on-danger shadow-[0_7px_0_var(--br-danger-edge)]"
                       : "bg-cta text-cta-ink shadow-[0_7px_0_var(--br-cta-edge)]"
                   }`}
                 >
@@ -447,7 +448,7 @@ export function Builder({ routineId, initial }: Props) {
               Making your steps…
             </h1>
             <p className="m-0 max-w-[280px] text-ink2">
-              {BUDDY_NAME} is breaking &ldquo;{text}&rdquo; into small, clear steps.
+              {buddyName} is breaking &ldquo;{text}&rdquo; into small, clear steps.
             </p>
           </div>
         )}
@@ -490,7 +491,7 @@ export function Builder({ routineId, initial }: Props) {
                     <div className="flex items-center gap-2.5">
                       <span
                         aria-hidden="true"
-                        className="flex size-[34px] items-center justify-center rounded-full bg-tone font-display text-[16px] font-bold text-ink shadow-[0_3px_0_var(--t-edge)]"
+                        className="flex size-[34px] items-center justify-center rounded-full bg-tone font-display text-[16px] font-bold text-tone-ink shadow-[0_3px_0_var(--t-edge)]"
                       >
                         {n}
                       </span>
@@ -626,7 +627,7 @@ export function Builder({ routineId, initial }: Props) {
                     type="button"
                     disabled={busy}
                     onClick={remove}
-                    className="br-press h-14 rounded-2xl border-0 bg-danger font-display text-[19px] font-bold text-white shadow-[0_5px_0_var(--br-danger-edge)]"
+                    className="br-press h-14 rounded-2xl border-0 bg-danger font-display text-[19px] font-bold text-on-danger shadow-[0_5px_0_var(--br-danger-edge)]"
                   >
                     Yes, delete it
                   </button>
@@ -737,7 +738,7 @@ export function Builder({ routineId, initial }: Props) {
         {/* 5. Ready */}
         {stage === "done" && (
           <div className="flex flex-col items-center gap-4 pt-[60px] text-center">
-            <span className="flex size-[140px] items-center justify-center rounded-full bg-go text-ink shadow-[0_7px_0_var(--br-go-edge)]">
+            <span className="flex size-[140px] items-center justify-center rounded-full bg-go text-on-go shadow-[0_7px_0_var(--br-go-edge)]">
               <Icon name="check" size={68} strokeWidth={3} />
             </span>
             <h1 ref={headingRef} tabIndex={-1} className={br.h1}>

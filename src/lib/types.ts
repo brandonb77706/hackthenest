@@ -40,6 +40,10 @@ export interface UserProfile extends Owned {
   last_streak_date: string | null;
   /** Avatar shown as the guide */
   equipped_avatar_id: ID | null;
+  /** Color scheme id from src/lib/theme.ts, like "blue" or "contrast" */
+  color_scheme: string;
+  /** Show the Buddy on the tab bar */
+  show_buddy: boolean;
 }
 
 export interface Routine extends Owned {

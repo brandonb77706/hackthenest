@@ -40,11 +40,11 @@ describe("TabBar", () => {
     pathname = "/routines";
     const user = userEvent.setup();
     render(<TabBar />);
-    await user.click(screen.getByRole("button", { name: /Bix the beaver/ }));
-    expect(screen.getByRole("status")).toHaveTextContent("Bix: Tap a card to start that routine.");
+    await user.click(screen.getByRole("button", { name: /Fox, your Buddy/ }));
+    expect(screen.getByRole("status")).toHaveTextContent("Fox: Tap a card to start that routine.");
     expect(play).toHaveBeenCalledWith(expect.stringContaining("Tap a card to start that routine."));
 
-    await user.click(screen.getByRole("button", { name: /Bix the beaver/ }));
+    await user.click(screen.getByRole("button", { name: /Fox, your Buddy/ }));
     expect(screen.queryByRole("status")).not.toBeInTheDocument();
     expect(stop).toHaveBeenCalled();
   });

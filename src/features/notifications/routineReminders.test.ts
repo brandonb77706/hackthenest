@@ -39,3 +39,26 @@ describe("Eastern routine reminders", () => {
     expect(dueRoutineReminders([{ ...updated, days: ["mon"] }], new Set(), new Date("2026-11-14T13:50:30Z"), delivered)).toEqual([]);
   });
 });
+
+import { safeTimeZone, zoneDate } from "./routineReminders";
+
+describe("routine reminders in the person's own time zone", () => {
+  const chicago = { id: "r1", title: "Morning routine", days: ["sat" as const], start_time: "08:00", active: true };
+
+  it("uses the time zone it's given", () => {
+    // 8:00 in Chicago in November is 14:00 UTC; the reminder is 10 minutes before.
+    const due = dueRoutineReminders([chicago], new Set(), new Date("2026-11-14T13:50:30Z"), new Set(), "America/Chicago");
+    expect(due[0]).toMatchObject({ stage: "before", startTime: "08:00" });
+    expect(dueRoutineReminders([chicago], new Set(), new Date("2026-11-14T12:50:30Z"), new Set(), "America/Chicago")).toEqual([]);
+  });
+
+  it("reads the calendar day in that zone", () => {
+    expect(zoneDate(new Date("2026-11-15T03:00:00Z"), "America/Los_Angeles")).toBe("2026-11-14");
+  });
+
+  it("falls back to Eastern for a missing or unknown zone", () => {
+    expect(safeTimeZone(undefined)).toBe("America/New_York");
+    expect(safeTimeZone("Not/AZone")).toBe("America/New_York");
+    expect(safeTimeZone("Europe/London")).toBe("Europe/London");
+  });
+});

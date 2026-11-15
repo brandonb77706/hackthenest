@@ -1,5 +1,22 @@
 # notifications
 
+Owner: Nati.
+
+## In-app routine reminders (working)
+
+Nati's reminders, in the "Bridge Mockups" design (styled by Brandon on `brandon/all-designs`):
+
+- **When**: 10 minutes before a routine starts, and a gentle nudge 10 minutes after if it hasn't been started (`routineReminders.ts`). Each reminder shows once per device.
+- **Where**: the banner drops in at the top of every tab (`RoutineReminderMonitor`, mounted in `src/app/(tabs)/layout.tsx`): "Bridge · now", the routine and time, how many steps, and **Start now** / **Later**.
+- **Bell**: Today's bell shows how many are new and lists recent reminders (`components/NotificationBell.tsx`, `inbox.ts`).
+- **Settings** (Me tab, this phone): Routine reminders, Check-in nudges, and Sound (a soft chime).
+- **API**: `GET /api/notifications/due?tz=...&delivered=...` uses the person's time zone (Eastern if missing) and skips routines with "Remind me" off.
+- Reminders only show while Bridge is open.
+
+---
+
+# notifications
+
 Owner: Nati. Components, logic, and tests for this feature live here. See CLAUDE.md for the rules.
 
 ## Delivery decision
