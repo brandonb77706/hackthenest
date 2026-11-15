@@ -10,18 +10,7 @@ import { mongodbAdapter } from "better-auth/adapters/mongodb";
 import { nextCookies } from "better-auth/next-js";
 import { MongoClient } from "mongodb";
 import { toRole } from "./roles";
-
-// Hosts allowed to serve the login page in dev: this computer, phones on the
-// same wifi, and the tunnels in next.config.ts. Deployed, set BETTER_AUTH_URL.
-const DEV_HOSTS = [
-  "localhost:*",
-  "127.0.0.1:*",
-  "10.*",
-  "192.168.*",
-  "172.*",
-  "*.trycloudflare.com",
-  "*.devtunnels.ms",
-];
+import { authUrls } from "./siteUrl";
 
 function createAuth() {
   const uri = process.env.MONGODB_URI;
@@ -35,14 +24,15 @@ function createAuth() {
       ? { clientId: process.env.GOOGLE_CLIENT_ID, clientSecret: process.env.GOOGLE_CLIENT_SECRET }
       : undefined;
 
-  const dev = process.env.NODE_ENV !== "production";
+  // Which addresses login trusts: BETTER_AUTH_URL, Vercel's own addresses, or dev ones.
+  const urls = authUrls(process.env);
 
   return betterAuth({
     appName: "Bridge",
     database: mongodbAdapter(db, { client }),
-    baseURL: process.env.BETTER_AUTH_URL || { allowedHosts: DEV_HOSTS, fallback: "http://localhost:3000" },
-    trustedOrigins: dev ? DEV_HOSTS.flatMap((host) => [`http://${host}`, `https://${host}`]) : undefined,
-    advanced: { trustedProxyHeaders: dev },
+    baseURL: urls.baseURL,
+    trustedOrigins: urls.trustedOrigins,
+    advanced: { trustedProxyHeaders: urls.trustProxyHeaders },
     emailAndPassword: { enabled: true, minPasswordLength: 8, autoSignIn: true },
     socialProviders: google ? { google } : {},
     session: {
