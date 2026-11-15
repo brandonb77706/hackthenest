@@ -18,13 +18,14 @@ export interface Voice {
  *   { id: "MKlLqCItoCkvdhrxgtLv", name: "Grampa Werthers", description: "Old and cranky" },
  */
 export const VOICES: Voice[] = [
+  { id: "iP95p4xoKVk53GoZ742B", name: "Chris", description: "Charming and down-to-earth" },
   { id: "cjVigY5qzO86Huf0OWal", name: "Eric", description: "Smooth and trustworthy" },
   { id: "SAz9YHcvj6GT2YYXdXww", name: "River", description: "Relaxed and calm" },
   { id: "EXAVITQu4vr4xnSDxMaL", name: "Sarah", description: "Reassuring and warm" },
   { id: "Xb7hH8MSUJpSbSDYk0k2", name: "Alice", description: "Clear, British accent" },
 ];
 
-export const DEFAULT_VOICE_ID = "cjVigY5qzO86Huf0OWal"; // Eric
+export const DEFAULT_VOICE_ID = "iP95p4xoKVk53GoZ742B"; // Chris
 
 /** Fast, low-cost model. It answered a short step in under 200ms in testing. */
 export const MODEL_ID = "eleven_flash_v2_5";

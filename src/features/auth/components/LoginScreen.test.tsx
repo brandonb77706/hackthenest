@@ -86,4 +86,17 @@ describe("LoginScreen", () => {
     fireEvent.click(screen.getByRole("button", { name: /Continue with Google/ }));
     expect(signInSocial).toHaveBeenCalledWith(expect.objectContaining({ provider: "google", callbackURL: "/" }));
   });
+
+  it("says to wait when there were too many tries", async () => {
+    signInSocial.mockResolvedValue({ data: null, error: { status: 429 } });
+    render(<LoginScreen google />);
+    fireEvent.click(screen.getByRole("button", { name: /Continue with Google/ }));
+    expect(await screen.findByRole("alert")).toHaveTextContent("Too many tries. Wait a minute, then try again.");
+  });
+
+  it("explains when Google sends you back without signing in", () => {
+    search = "error=state_mismatch";
+    render(<LoginScreen google />);
+    expect(screen.getByRole("alert")).toHaveTextContent("Google sign-in didn't finish. Try again, or use email.");
+  });
 });

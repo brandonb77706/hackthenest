@@ -12,10 +12,10 @@ describe("voiceProvider", () => {
     expect(voiceProvider()).toBe("elevenlabs");
   });
 
-  it("uses the free browser voice in npm run dev when not set, so testing doesn't use credits", () => {
+  it("uses ElevenLabs in npm run dev too when not set", () => {
     vi.stubEnv("NEXT_PUBLIC_VOICE_PROVIDER", "");
     vi.stubEnv("NODE_ENV", "development");
-    expect(voiceProvider()).toBe("browser");
+    expect(voiceProvider()).toBe("elevenlabs");
   });
 
   it("uses ElevenLabs when deployed and not set", () => {

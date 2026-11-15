@@ -2,10 +2,9 @@
 // Tries ElevenLabs (through /api/speak) first, then the browser's own voice.
 //
 // Which voice to use is set by NEXT_PUBLIC_VOICE_PROVIDER:
-//   "browser"     the browser's free voice only. Never calls ElevenLabs.
+//   "browser"     the browser's free voice only. Never calls ElevenLabs (saves credits).
 //   "elevenlabs"  ElevenLabs, with the browser voice as backup.
-//   not set       browser voice in `npm run dev` (testing doesn't use credits),
-//                 ElevenLabs everywhere else.
+//   not set       ElevenLabs, everywhere (npm run dev too).
 
 export type PlayerStatus = "idle" | "loading" | "playing";
 
@@ -22,7 +21,7 @@ const FALLBACK_RATE = 0.9;
 export function voiceProvider(): VoiceProvider {
   const setting = process.env.NEXT_PUBLIC_VOICE_PROVIDER;
   if (setting === "browser" || setting === "elevenlabs") return setting;
-  return process.env.NODE_ENV === "development" ? "browser" : "elevenlabs";
+  return "elevenlabs";
 }
 
 /**
