@@ -19,7 +19,8 @@ export function LoginScreen({ google }: { google: boolean }) {
   const [creating, setCreating] = useState(false);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [error, setError] = useState<string | null>(null);
+  // Google sends people back with ?error=... when sign-in didn't finish.
+  const [error, setError] = useState<string | null>(params.get("error") ? "Google sign-in didn't finish. Try again, or use email." : null);
   const [busy, setBusy] = useState(false);
   const copy = loginCopy(role, creating);
 
@@ -57,7 +58,11 @@ export function LoginScreen({ google }: { google: boolean }) {
       errorCallbackURL: "/login",
     });
     if (result.error) {
-      setError("Google sign-in didn't work. Try again, or use email.");
+      setError(
+        result.error.status === 429
+          ? signInErrorText(result.error, false)
+          : "Google sign-in didn't work. Try again, or use email.",
+      );
       setBusy(false);
     }
   }

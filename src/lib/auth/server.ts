@@ -10,6 +10,7 @@ import { mongodbAdapter } from "better-auth/adapters/mongodb";
 import { nextCookies } from "better-auth/next-js";
 import { MongoClient } from "mongodb";
 import { toRole } from "./roles";
+import { ipHeaders, SIGN_IN_LIMITS } from "./limits";
 import { authUrls } from "./siteUrl";
 
 function createAuth() {
@@ -32,7 +33,12 @@ function createAuth() {
     database: mongodbAdapter(db, { client }),
     baseURL: urls.baseURL,
     trustedOrigins: urls.trustedOrigins,
-    advanced: { trustedProxyHeaders: urls.trustProxyHeaders },
+    advanced: {
+      trustedProxyHeaders: urls.trustProxyHeaders,
+      // Who is asking, so each visitor gets their own sign-in limit.
+      ipAddress: { ipAddressHeaders: ipHeaders(process.env) },
+    },
+    rateLimit: { customRules: SIGN_IN_LIMITS },
     emailAndPassword: { enabled: true, minPasswordLength: 8, autoSignIn: true },
     socialProviders: google ? { google } : {},
     session: {
