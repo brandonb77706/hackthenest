@@ -9,14 +9,16 @@
     "lint": "eslint",
     "test": "vitest run",
     "test:watch": "vitest",
-    "db:seed": "tsx --env-file=.env.local scripts/seed.ts"
+    "db:seed": "tsx --env-file=.env.local scripts/seed.ts",
+    "push:test": "node --env-file=.env src/features/notifications/send-test-push.mjs"
   },
   "dependencies": {
     "@base44/sdk": "^0.8.61",
     "mongoose": "^9.12.1",
     "next": "16.4.6",
     "react": "19.3.0",
-    "react-dom": "19.3.0"
+    "react-dom": "19.3.0",
+    "web-push": "^4.0.0"
   },
   "devDependencies": {
     "@tailwindcss/turbopack": "4.3.3",
